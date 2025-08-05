@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+
+/* In your global CSS or Tailwind @layer */

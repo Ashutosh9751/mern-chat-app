@@ -1,0 +1,94 @@
+import axios from 'axios';
+import React, { useState } from 'react'
+import { useEffect } from 'react';
+import { use } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { IoChatboxSharp } from "react-icons/io5";
+import { onChatScreen, selectUser } from '../redux/userslice';
+const Middle = ({ friend }) => {
+
+   
+
+  const [filterfriend, setfilterfriend] = useState(friend);
+  
+  const onlineuser = useSelector((state) => state.user.onlineuser);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    setfilterfriend(friend);
+  }, [friend]);
+  const searchuser = (e) => {
+
+    const searchterm = friend.filter((item) => {
+      return item.customname.toLowerCase().startsWith(e.target.value.toLowerCase());
+    });
+    setfilterfriend(searchterm);
+  }
+  const onclickhandler =(user) => {
+
+    dispatch(selectUser(user));
+   
+    dispatch(onChatScreen(true));
+
+
+  }
+  return (
+    <div className='w-10/10   overflow-auto md:w-3/10'  >
+      <div className='p-4 w-10/10'>
+        <div className='h-min mb-2 '>
+          <label className="input rounded-4xl w-full">
+            <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <g
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                strokeWidth="2.5"
+                fill="none"
+                stroke="currentColor"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </g>
+            </svg>
+            <input type="search" required placeholder="Search" onChange={searchuser} />
+          </label>
+        </div>
+        <div>
+          <div>
+            {
+            friend.length === 0 ? (
+              <div>
+                <h1 className='text-2xl font-bold text-center'>You have no friends yet</h1>
+                <p className='text-center'>Please add friends to chat with them</p>
+              </div>
+            ) : (
+              filterfriend.map((item) => (
+                <div key={item._id} onClick={() => { onclickhandler(item) }} >
+                  <div className='flex  hover:bg-gray-200' >
+                  <div className={`avatar ${onlineuser.includes(item.user._id) ? 'avatar-online' : 'avatar-offline'}`}>
+
+                      <div className="w-12 rounded-full">
+  {item.user.dp && <img src={item.user.dp} alt="dp" />}
+</div>
+
+                    </div>
+                    <div className='ml-2'>
+                      <h2 className='text-lg font-bold'>{item.customname==""?item.user.username:item.customname}</h2>
+                     
+                    </div>
+                  </div>
+                  <br />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {
+
+        }
+      </div>
+    </div>
+  )
+
+}
+
+export default Middle
