@@ -19,13 +19,14 @@ const Right = () => {
   const logineduser = useSelector((state) => state.user?.userInfo);
   const selectedUser = useSelector((state) => state.user?.selectedUser);
    const url = import.meta.env.VITE_API_URL;
+  const socketUrl = import.meta.env.VITE_SOCKET_URL;
 const [receivedmessage, setreceivedmessage] = useState([]);
   const socket = useRef();
   // Function to handle form submission
   // This function sends the message to the server when the form is submitted
    useEffect(() => {
      if (logineduser) {
-       socket.current = io(url, {
+       socket.current = io(socketUrl, {
          transports: ['websocket'],
          withCredentials: true,
          query: { logineduser: logineduser.userId }
