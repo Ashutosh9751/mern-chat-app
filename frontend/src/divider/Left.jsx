@@ -10,13 +10,13 @@ import { IoPersonAdd } from "react-icons/io5";
 import { logout, onChatScreen, selectUser } from '../redux/userslice';
 import axios from 'axios';
 const Left = () => {
-  const url = "http://localhost:3000/api";
+  const url = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const handleLogout = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/user/logout', {
+      const response = await axios.get(`${url}/user/logout`, {
         withCredentials: true
       });
       if (response.status === 200) {

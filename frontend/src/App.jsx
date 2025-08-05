@@ -14,8 +14,8 @@ import { login,setonlineuser } from './redux/userslice'
 const App = () => {
   const dispatch = useDispatch();
   const logineduser = useSelector((state) => state.user.userInfo);
-  const url = "http://localhost:3000/"
-  
+  const url = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     if(!logineduser) {
       return;

@@ -14,7 +14,7 @@ const Ui = () => {
   const [onchat, setonchat] = useState(false)
 
   const [ismobile, setismobile] = useState(window.innerWidth < 768 ? true : false);
-  const url = "http://localhost:3000/api"
+  const url = import.meta.env.VITE_API_URL;
   const ChatScreen = useSelector((state) => state.user?.isonchatscreen);
   const selectedUser = useSelector((state) => state.user?.selectedUser);
   useEffect(() => {
