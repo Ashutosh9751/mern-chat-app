@@ -7,6 +7,7 @@ import { onChatScreen } from '../redux/userslice';
 import { IoSendSharp } from "react-icons/io5";
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { setonlineuser } from '../redux/userslice';
 
 
 
@@ -31,7 +32,10 @@ const [receivedmessage, setreceivedmessage] = useState([]);
          withCredentials: true,
          query: { logineduser: logineduser.userId }
        });
- 
+     socket.current.on('online_users', (userIds) => {
+      dispatch(setonlineuser(userIds));
+    });
+
        socket.current.on('receive_message', (newMessage) => {
          if (
            (newMessage.sender === selectedUser.user._id && newMessage.receiver === logineduser.userId) ||
