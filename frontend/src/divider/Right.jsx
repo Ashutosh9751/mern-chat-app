@@ -50,24 +50,46 @@ const [receivedmessage, setreceivedmessage] = useState([]);
      }
    }, [logineduser, selectedUser]);
  
-  const submithandler = (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-    const msgData = {
-      senderid: logineduser.userId,
-      receiverid: selectedUser.user._id,
-      message
-    };
-    socket.current.emit('send_message', msgData);
-    setreceivedmessage((prev)=>[...prev,{
-      _id:Date.now(),
-      sender:logineduser.userId,
-      receiver:selectedUser.user._id,
-      message,
-      createdAt:new Date().toISOString()
-    }])
-setMessage('')
+  const submithandler = async (e) => {
+  e.preventDefault();
+  if (!message.trim()) return;
+
+  const msgData = {
+    senderid: logineduser.userId,
+    receiverid: selectedUser.user._id,
+    message,
   };
+
+  // Emit message
+  socket.current.emit('send_message', msgData);
+
+  // Optimistic update: show the message instantly
+  setreceivedmessage((prev) => [
+    ...prev,
+    {
+      _id: Date.now(),
+      sender: logineduser.userId,
+      receiver: selectedUser.user._id,
+      message,
+      createdAt: new Date().toISOString(),
+      temp: true, // mark as temporary
+    },
+  ]);
+
+  setMessage('');
+
+  // Wait for server confirmation
+  socket.current.on('message_sent_ack', (confirmedMessage) => {
+    setreceivedmessage((prev) =>
+      prev.map((msg) =>
+        msg.temp && msg.message === confirmedMessage.message
+          ? confirmedMessage // replace dummy with real message
+          : msg
+      )
+    );
+  });
+};
+
 
   //get messages from the server
   // This function retrieves messages between the logged-in user and the selected user from the server
