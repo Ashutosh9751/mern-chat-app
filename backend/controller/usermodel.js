@@ -18,6 +18,8 @@ export const login = async (req, res) => {
         var token = jwt.sign({ id:user._id }, 'shhhhh');
         res.cookie('token', token, {
             httpOnly: true,
+            secure: true,
+            sameSite: "None",
             maxAge: 24 * 60 * 60 * 1000 // 1 day
         })
         res.status(200).json({ message: `hii ${user.username}`, user: user, token: token });
