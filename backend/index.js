@@ -13,8 +13,8 @@ const app = express();
 const server = createServer(app);
 
 app.use(cors({
-    origin:["http://localhost:5173","https://mern-chat-app-ashy-eight.vercel.app/",
-      "https://mern-chat-2gzbmyiwz-ashutosh9751s-projects.vercel.app/"
+    origin:["http://localhost:5173",
+      "https://mern-chat-f1ln0420o-ashutosh9751s-projects.vercel.app/"
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
