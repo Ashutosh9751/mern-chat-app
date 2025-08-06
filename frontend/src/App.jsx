@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login, setonlineuser } from './redux/userslice';
 import { ToastContainer } from 'react-toastify';
 import { io } from 'socket.io-client';
-import ProtectedRoute from './Protectedroute';
+import ProtectedRoute from './ProtectedRoute';
 
 
 const App = () => {
