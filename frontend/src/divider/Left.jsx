@@ -24,7 +24,10 @@ const Left = () => {
         dispatch(onChatScreen(false));
         dispatch(selectUser(null));
         dispatch(logout());
-        navigate('/');
+        localStorage.removeItem('userid');
+        localStorage.removeItem('username');
+        localStorage.removeItem('dp');
+        navigate('/login');
 
       }
     } catch (error) {

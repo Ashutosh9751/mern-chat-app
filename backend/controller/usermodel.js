@@ -69,60 +69,62 @@ export const logout= async (req, res) => {
     });
 }
 export const adduser = async (req, res) => {
-    const { customname, phone } = req.body;
+  const { customname, phone } = req.body;
 
-    try {
-        // 1. Find the user you are trying to add by phone number
-        //here ashu
-        const userToAdd = await usermodel.findOne({ phone: phone });
-        if (!userToAdd) {
-            return res.status(404).json({ message: "User not found" });
-        }
-//login user is in req.user
-        const currentUserId = req.user.id;
-
-        // Don't allow adding self
-        if (currentUserId === userToAdd._id.toString()) {
-            return res.status(400).json({ message: "You cannot add yourself as a friend." });
-        }
-
-        // 2. Add userToAdd to currentUser's friends list
-        const updatedCurrentUserFriends = await friendsmodel.findOneAndUpdate(
-            { userId: currentUserId },
-            {
-                $addToSet: {
-                    friends: {
-                        user: userToAdd._id,
-                        customname: customname // custom name from current user
-                    }
-                }
-            },
-            { new: true, upsert: true }
-        );
-
-        // 3. Add currentUser to userToAdd's friends list
-        const currentUser = await usermodel.findById(currentUserId);
-        const updateInFriendSide = await friendsmodel.findOneAndUpdate(
-            { userId: userToAdd._id },
-            {
-                $addToSet: {
-                    friends: {
-                        user: currentUserId,
-                        customname: currentUser.name // default to your real name or phone, not custom
-                    }
-                }
-            },
-            { new: true, upsert: true }
-        );
-
-        res.json({
-            message: "User added as friend successfully",
-            youAdded: { user: userToAdd, customname },
-            theySeeYouAs: { user: currentUser, customname: currentUser.name },
-            yourFriendsList: updatedCurrentUserFriends
-        });
-    } catch (error) {
-        console.error("Error adding user:", error);
-        res.status(500).json({ message: "Internal server error" });
+  try {
+    const userToAdd = await usermodel.findOne({ phone });
+    if (!userToAdd) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    const currentUserId = req.user.id;
+
+    if (currentUserId === userToAdd._id.toString()) {
+      return res.status(400).json({ message: "You cannot add yourself as a friend." });
+    }
+
+    // ✅ Check if the user is already a friend
+    const existingFriendDoc = await friendsmodel.findOne({ userId: currentUserId, 'friends.user': userToAdd._id });
+
+    if (existingFriendDoc) {
+      return res.status(400).json({ message: "User is already in your friends list." });
+    }
+
+    // ✅ Add userToAdd to current user's friend list
+    const updatedCurrentUserFriends = await friendsmodel.findOneAndUpdate(
+      { userId: currentUserId },
+      {
+        $addToSet: {
+          friends: {
+            user: userToAdd._id,
+            customname: customname
+          }
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    // ✅ Add current user to userToAdd's friend list
+    const currentUser = await usermodel.findById(currentUserId);
+    await friendsmodel.findOneAndUpdate(
+      { userId: userToAdd._id },
+      {
+        $addToSet: {
+          friends: {
+            user: currentUserId,
+            customname: currentUser.username
+          }
+        }
+      },
+      { new: true, upsert: true }
+    );
+
+    res.json({
+      message: "User added as friend successfully",
+      yourFriendsList: updatedCurrentUserFriends
+    });
+  } catch (error) {
+    console.error("Error adding user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };

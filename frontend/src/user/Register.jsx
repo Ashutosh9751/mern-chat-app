@@ -2,7 +2,9 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router';
 import axios from 'axios';
 import Login from './Login';
+import {toast } from 'react-toastify';
 const Register = () => {
+  const [loading, setloading] = useState(false);
   const [username, setusername] = useState("");
   const [email, setemail] = useState("");
   const [password, setpassword] = useState("");
@@ -13,7 +15,7 @@ const Register = () => {
   const url = import.meta.env.VITE_API_URL;
   const submithandler = async (e) => {
   e.preventDefault();
-
+setloading(true);
   const formData = new FormData();
   formData.append('username', username);
   formData.append('email', email);
@@ -30,15 +32,30 @@ const Register = () => {
     });
 
     if (response.data.message === "User created successfully") {
-      console.log(response.data.message);
+      toast.success(response.data.message);
       navigate('/login');
-    } else {
-      console.log(response.data.message);
+    }
+    else if (response.data.message === "User already exists please login") {
+      toast.info(response.data.message);
+    }
+    else {
+      toast.error(response.data.message);
     }
   } catch (error) {
     console.error("Registration failed:", error);
   }
+  finally{
+    setloading(false);
+  }
 }
+if (loading) {
+  return (
+    <div className="h-screen w-screen flex justify-center items-center bg-gray-100">
+      <span className="loading loading-spinner loading-lg text-indigo-600"></span>
+    </div>
+  );
+}
+
 
   return (
     <div className=' h-screen w-screen flex justify-center items-center ' style={{ backgroundColor: "rgba(242,244,247,1)" }}>

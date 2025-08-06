@@ -14,12 +14,19 @@ const userslice=createSlice({
             state.userInfo=action.payload;
             state.isLoggedIn=true;
         },
-        logout:(state)=>{
-            state.userInfo=null;
-            state.isLoggedIn=false;
-            state.selectedUser=null;
-            state.isonchatscreen=false;
-        },
+     logout: (state) => {
+  state.userInfo = null;
+  state.isLoggedIn = false;
+  state.selectedUser = null;
+  state.isonchatscreen = false;
+  state.onlineuser = [];
+
+  // 🧹 Clear localStorage
+  localStorage.removeItem('userid');
+  localStorage.removeItem('username');
+  localStorage.removeItem('dp');
+},
+
         selectUser:(state,action)=>{
             state.selectedUser=action.payload;
            

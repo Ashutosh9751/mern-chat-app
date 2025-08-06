@@ -11,7 +11,8 @@ const Addfriend = () => {
  const url = import.meta.env.VITE_API_URL;
   const submithandler = async (e) => {
     e.preventDefault();
-
+    console.log(customname, phone);
+try {
     const response = await axios.post(`${url}/user/adduser`, {
       customname,
       phone
@@ -25,6 +26,7 @@ const Addfriend = () => {
       }
     );
     if (response) {
+      console.log(response.data);
       setcustomname("");
       setphone("");
        console.log(response.data.message);
@@ -35,9 +37,20 @@ const Addfriend = () => {
     }
     if(response.data.message === "User added as friend successfully") {
       toast.success(response.data.message);
-      navigate(`/home`);
+      navigate(`/`);
+    }
+    if(response.data.message === "You cannot add yourself as a friend.") {
+      toast.error(response.data.message);
+    }
+    if(response.data.message === "User is already in your friends list.") {
+      toast.error(response.data.message);
     }
   }
+} catch (error) {
+  console.error("Error adding friend:", error);
+  toast.error("An error occurred while adding friend.");
+}
+  
   }
  return (
       <div className=' h-screen w-screen flex justify-center items-center ' style={{ backgroundColor: "rgba(242,244,247,1)" }}>

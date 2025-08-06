@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import { login } from '../redux/userslice';
+import { toast } from 'react-toastify';
 const Login = () => {
   const navigate = useNavigate();
   const [email, setemail] = useState("");
@@ -28,7 +29,7 @@ const Login = () => {
 
     if (response.status==200) {
       if(response.data.message=="Invalid credential"  || response.data.message=="User not found please signup"){
-        alert(response.data.message);
+        toast.error(response.data.message);
       } else {
        
         const userId = response.data.user._id;
@@ -39,7 +40,8 @@ console.log('userId', userId);
         localStorage.setItem('username', username);
         localStorage.setItem('dp', dp);
         dispatch(login({ userId, username, dp }));
-        navigate(`/home`);
+        toast.success(response.data.message);
+        navigate(`/`);
       }
     }
   } catch (error) {
@@ -117,7 +119,7 @@ console.log('userId', userId);
           </button>
           <div className='flex justify-between w-full text-sm font-semibold my-2' >
             <p className='text-gray-600 text-sm'>Have an account</p>
-            <p className='text-blue-600 cursor-pointer' onClick={() => { navigate('/') }}>Sign up</p>
+            <p className='text-blue-600 cursor-pointer' onClick={() => { navigate('/register') }}>Sign up</p>
           </div>
         </form>
       </div>
