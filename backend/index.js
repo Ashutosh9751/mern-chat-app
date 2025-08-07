@@ -53,7 +53,7 @@ io.on('connection', (socket) => {
  io.emit('online_users',getonlineuser());
 
   // Handle send_message event
-  socket.on('send_message', async ({ senderid, receiverid, message }) => {
+  socket.on('send_message', async ({ senderid,sendername, receiverid, message }) => {
     try {
       const newMessage = await Messagemodel.create({
         sender: senderid,
@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
       // Emit to receiver if online
       const receiverSocketId = usersocketmap[receiverid];
       if (receiverSocketId) {
-        io.to(receiverSocketId).emit('receive_message', newMessage);
+        io.to(receiverSocketId).emit('receive_message', newMessage, sendername);
       }
 
       // Optionally, emit back to sender too

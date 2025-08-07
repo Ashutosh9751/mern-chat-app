@@ -3,8 +3,7 @@ import Left from './Left';
 import Middle from './Middle';
 import Right from './Right';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 
 const Ui = () => {
   const [friend, setfriend] = useState([]);
@@ -15,7 +14,6 @@ const Ui = () => {
   const logininfo = useSelector((state) => state.user?.userInfo);
   const ChatScreen = useSelector((state) => state.user?.isonchatscreen);
   
-  const navigate = useNavigate();
 
   // ❗ Redirect if not logged in
 
@@ -31,6 +29,7 @@ const Ui = () => {
             setfriend([]);
           } else {
             setfriend(friends.data.friends);
+       
           }
 }
       } catch (err) {

@@ -8,7 +8,8 @@ import { IoSendSharp } from "react-icons/io5";
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { setonlineuser } from '../redux/userslice';
-
+import { incrementUnread } from '../redux/userslice';
+import { toast } from 'react-toastify';
 
 
 const Right = () => {
@@ -19,48 +20,79 @@ const Right = () => {
   const [message, setMessage] = useState('');
   const logineduser = useSelector((state) => state.user?.userInfo);
   const selectedUser = useSelector((state) => state.user?.selectedUser);
+  const friendspresent = useSelector((state) => state.user?.friendspresent);
    const url = import.meta.env.VITE_API_URL;
   const socketUrl = import.meta.env.VITE_SOCKET_URL;
+
+  function playNotificationSound() {
+  const audio = new Audio('sounds/notification.mp3'); // Place this file in `public/`
+  audio.play().catch(err => console.error('Audio play failed:', err));
+}
+
 const [receivedmessage, setreceivedmessage] = useState([]);
   const socket = useRef();
   // Function to handle form submission
   // This function sends the message to the server when the form is submitted
-   useEffect(() => {
-     if (logineduser) {
-       socket.current = io(socketUrl, {
-         transports: ['websocket'],
-         withCredentials: true,
-         query: { logineduser: logineduser.userId }
-       });
-     socket.current.on('online_users', (userIds) => {
+  useEffect(() => {
+  if (!logineduser?.userId) return;
+  if (logineduser) {
+    socket.current = io(socketUrl, {
+      transports: ['websocket'],
+      withCredentials: true,
+      query: { logineduser: logineduser.userId }
+    });
+
+    socket.current.on('online_users', (userIds) => {
       dispatch(setonlineuser(userIds));
     });
 
-       socket.current.on('receive_message', (newMessage) => {
-         if (
-           (newMessage.sender === selectedUser.user._id && newMessage.receiver === logineduser.userId) ||
-           (newMessage.receiver === selectedUser.user._id && newMessage.sender === logineduser.userId)
-         ) {
-           setreceivedmessage((prevMessages) => [...prevMessages, newMessage]);
-         }
-       });
- 
-       socket.current.on('disconnect', () => {
-         console.log('Socket disconnected');
-       });
- 
-       return () => {
-         socket.current.disconnect();
-       };
-     }
-   }, [logineduser, selectedUser]);
- 
+    socket.current.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+
+    return () => {
+      socket.current.disconnect();
+    };
+  }
+}, [logineduser?.userId]);
+useEffect(() => {
+  if (!socket.current) return;
+
+  const listener = (newMessage, sendername) => {
+    
+
+    const selectedId = selectedUser?.user?._id;
+    const isCurrentChat =
+      selectedId &&
+      ((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
+        (newMessage.receiver === selectedId && newMessage.sender === logineduser.userId));
+
+    if (isCurrentChat) {
+      setreceivedmessage((prevMessages) => [...prevMessages, newMessage]);
+      playNotificationSound();
+    } else {
+
+      toast.success(` New message from ${sendername || "someone"}`);
+      playNotificationSound();
+      dispatch(incrementUnread(newMessage.sender));
+    }
+  };
+
+  socket.current.on('receive_message', listener);
+
+  return () => {
+    socket.current.off('receive_message', listener); // clean up old listener
+  };
+}, [selectedUser?.user?._id, logineduser?.userId]);
+
+
   const submithandler = async (e) => {
   e.preventDefault();
   if (!message.trim()) return;
 
   const msgData = {
     senderid: logineduser.userId,
+   sendername: logineduser.username,
     receiverid: selectedUser.user._id,
     message,
   };

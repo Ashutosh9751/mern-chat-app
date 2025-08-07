@@ -5,12 +5,14 @@ import { use } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IoChatboxSharp } from "react-icons/io5";
 import { onChatScreen, selectUser } from '../redux/userslice';
+import { clearUnread } from '../redux/userslice';
 
 const Middle = ({ friend }) => {
   const [filterfriend, setfilterfriend] = useState(friend);
   const onlineuser = useSelector((state) => state.user.onlineuser);
   const dispatch = useDispatch();
-
+const unreadMessages = useSelector((state) => state.user.unreadMessages) || {};
+const friendspresent = useSelector((state) => state.user.friendspresent) || [];
   useEffect(() => {
     setfilterfriend(friend || []);
   }, [friend]);
@@ -25,6 +27,7 @@ const Middle = ({ friend }) => {
   const onclickhandler = (user) => {
     dispatch(selectUser(user));
     dispatch(onChatScreen(true));
+     dispatch(clearUnread(user.user._id)); 
   };
 
   // ✅ Prevent crash on first render
@@ -66,11 +69,18 @@ const Middle = ({ friend }) => {
                         {item.user.dp && <img src={item.user.dp} alt="dp" />}
                       </div>
                     </div>
-                    <div className='ml-2'>
-                      <h2 className='text-lg font-bold'>
-                        {item.customname === "" ? item.user.username : item.customname}
-                      </h2>
-                    </div>
+                <div className="ml-2 flex justify-between items-center w-full pr-4">
+  <h2 className="text-lg font-bold">
+    {item.customname === "" ? item.user.username : item.customname}
+  </h2>
+  
+  {unreadMessages[item.user._id] > 0 && (
+    <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center">
+      {unreadMessages[item.user._id]}
+    </span>
+  )}
+</div>
+
                   </div>
                   <br />
                 </div>

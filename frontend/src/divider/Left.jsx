@@ -9,6 +9,7 @@ import { useDispatch } from 'react-redux';
 import { IoPersonAdd } from "react-icons/io5";
 import { logout, onChatScreen, selectUser } from '../redux/userslice';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 const Left = () => {
   const url = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const Left = () => {
         withCredentials: true
       });
       if (response.status === 200) {
-        alert(response.data.message);
+        toast.success(response.data.message);
         dispatch(onChatScreen(false));
         dispatch(selectUser(null));
         dispatch(logout());
@@ -33,7 +34,7 @@ const Left = () => {
     } catch (error) {
       console.error("Logout failed", error);
     }
-    console.log("User logged out");
+    
   };
   const addfriend=async ()=>{
    
