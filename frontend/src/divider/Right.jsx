@@ -190,7 +190,7 @@ useEffect(() => {
             </div>
           </div>
         </div>
-        <div className='w-full h-4/5 overflow-y-scroll flex flex-col justify-end items-center'>
+        <div className='w-full h-4/5 overflow-y-scroll flex flex-col  items-center'>
    {receivedmessage.map((msg)=>{
         return (
           <div key={msg._id} className={`${msg.sender === logineduser.userId ? 'chat chat-end text-green-100' : 'chat chat-start'} w-full`}>
