@@ -6,7 +6,6 @@ import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 
 const Ui = () => {
-  const [friend, setfriend] = useState([]);
   const [onchat, setonchat] = useState(false);
   const [ismobile, setismobile] = useState(window.innerWidth < 768 ? true : false);
   const url = import.meta.env.VITE_API_URL;
@@ -18,26 +17,7 @@ const Ui = () => {
   // ❗ Redirect if not logged in
 
 
-  useEffect(() => {
-    const getfriends = async () => {
-      try {
-        const friends = await axios.get(`${url}/friends/getfriends`, {
-          withCredentials: true
-        });
-        if (friends.data) {
-          if (friends.data.message === "you have no friends yet") {
-            setfriend([]);
-          } else {
-            setfriend(friends.data.friends);
-       
-          }
-}
-      } catch (err) {
-        console.error("Failed to fetch friends:", err);
-      }
-    };
-    getfriends();
-  }, [friend, url, logininfo]);
+ 
 
   useEffect(() => {
     const handlesize = () => {
@@ -63,7 +43,7 @@ const Ui = () => {
     return (
       <div className='w-screen h-screen flex'>
         <Left />
-        <Middle friend={friend} />
+        <Middle  />
         <Right />
       </div>
     );
@@ -71,7 +51,7 @@ const Ui = () => {
     return (
       <div className='w-screen h-screen flex'>
         <Left />
-        <Middle friend={friend} />
+        <Middle  />
       </div>
     );
   } else if (ismobile && onchat) {

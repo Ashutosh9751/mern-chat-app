@@ -15,12 +15,13 @@ import { toast } from 'react-toastify';
 const Right = () => {
   
   const [ismobile, setismobile] = useState(window.innerWidth < 768);
-  const ChatScreen = useSelector((state) => state.user?.isonchatscreen);
   const dispatch = useDispatch();
   const [message, setMessage] = useState('');
+  const ChatScreen = useSelector((state) => state.user?.isonchatscreen);
+
   const logineduser = useSelector((state) => state.user?.userInfo);
   const selectedUser = useSelector((state) => state.user?.selectedUser);
-  const friendspresent = useSelector((state) => state.user?.friendspresent);
+  
    const url = import.meta.env.VITE_API_URL;
   const socketUrl = import.meta.env.VITE_SOCKET_URL;
 
@@ -28,6 +29,12 @@ const Right = () => {
   const audio = new Audio('sounds/notification.mp3'); // Place this file in `public/`
   audio.play().catch(err => console.error('Audio play failed:', err));
 }
+
+const chatScreenRef = useRef(ChatScreen);
+
+useEffect(() => {
+  chatScreenRef.current = ChatScreen;
+}, [ChatScreen]);
 
 const [receivedmessage, setreceivedmessage] = useState([]);
   const socket = useRef();
@@ -58,25 +65,30 @@ const [receivedmessage, setreceivedmessage] = useState([]);
 useEffect(() => {
   if (!socket.current) return;
 
-  const listener = (newMessage, sendername) => {
-    
+const listener = (newMessage, sendername) => {
+  const isChatScreen = chatScreenRef.current;
+  const selectedId = selectedUser?.user?._id;
+  const isCurrentChat =
+    isChatScreen &&
+    selectedId &&
+    ((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
+      (newMessage.receiver === selectedId && newMessage.sender === logineduser.userId));
 
-    const selectedId = selectedUser?.user?._id;
-    const isCurrentChat =
-      selectedId &&
-      ((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
-        (newMessage.receiver === selectedId && newMessage.sender === logineduser.userId));
+  if (isCurrentChat) {
+    setreceivedmessage((prevMessages) => [...prevMessages, newMessage]);
+    playNotificationSound();
+  } else {
+    playNotificationSound();
+    dispatch(incrementUnread(newMessage.sender));
 
-    if (isCurrentChat) {
-      setreceivedmessage((prevMessages) => [...prevMessages, newMessage]);
-      playNotificationSound();
+    if (!isChatScreen) {
+      toast.error(`New message from ${sendername || "someone"}`);
     } else {
-
-      toast.success(` New message from ${sendername || "someone"}`);
-      playNotificationSound();
-      dispatch(incrementUnread(newMessage.sender));
+      toast.success(`New message from ${sendername || "someone"}`);
     }
-  };
+  }
+};
+
 
   socket.current.on('receive_message', listener);
 

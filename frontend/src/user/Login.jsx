@@ -35,7 +35,7 @@ const Login = () => {
         const userId = response.data.user._id;
         const username = response.data.user.username;
         const dp= response.data.user.dp;
-console.log('userId', userId);
+
         localStorage.setItem('userid', userId);
         localStorage.setItem('username', username);
         localStorage.setItem('dp', dp);

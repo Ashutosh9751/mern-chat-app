@@ -1,18 +1,61 @@
 import axios from 'axios';
 import React, { useState } from 'react'
 import { useEffect } from 'react';
-import { use } from 'react';
+
 import { useDispatch, useSelector } from 'react-redux';
-import { IoChatboxSharp } from "react-icons/io5";
+
 import { onChatScreen, selectUser } from '../redux/userslice';
 import { clearUnread } from '../redux/userslice';
-
-const Middle = ({ friend }) => {
-  const [filterfriend, setfilterfriend] = useState(friend);
-  const onlineuser = useSelector((state) => state.user.onlineuser);
+import {logout} from '../redux/userslice';
+const Middle = () => {
   const dispatch = useDispatch();
-const unreadMessages = useSelector((state) => state.user.unreadMessages) || {};
-const friendspresent = useSelector((state) => state.user.friendspresent) || [];
+  const url = import.meta.env.VITE_API_URL;
+
+
+  const [friend, setfriend] = useState([]);
+  const [filterfriend, setfilterfriend] = useState(friend);
+  const [loading, setloading] = useState(false);
+
+  const onlineuser = useSelector((state) => state.user.onlineuser);
+  const unreadMessages = useSelector((state) => state.user.unreadMessages) || {};
+  const logininfo = useSelector((state) => state.user?.userInfo);
+const isLoggedIn=useSelector((state) => state.user.isLoggedIn);
+  
+  // ✅ Only show UI if user is logged in
+  if (!logininfo || !logininfo.userId || !logininfo.username || !logininfo.dp) {
+    return null; // or loading screen if preferred
+  }
+
+  // ✅ Fetch friends list on component mount
+ useEffect(() => {
+  setloading(true);
+    const getfriends = async () => {
+      try {
+        const friends = await axios.get(`${url}/friends/getfriends`, {
+          withCredentials: true
+        });
+        if (friends.data) {
+          if (friends.data.friends.length === 0) {
+            setfriend([]);
+          } else if (friends.data.friends.length > 0) {
+            setfriend(friends.data.friends);
+       
+          }
+}
+      } catch (err) {
+        if(err.status==401){
+          console.error("Unauthorized access:", err);
+       dispatch(logout());
+        } else {
+          console.error("Failed to fetch friends:", err);
+        }
+      }
+      finally {
+        setloading(false);
+      }
+    };
+    getfriends();
+  }, [ url, logininfo]);
   useEffect(() => {
     setfilterfriend(friend || []);
   }, [friend]);
@@ -31,14 +74,23 @@ const friendspresent = useSelector((state) => state.user.friendspresent) || [];
   };
 
   // ✅ Prevent crash on first render
-  if (!Array.isArray(friend)) {
+if(loading){
     return (
-      <div className='w-full p-4'>
-        <h2 className='text-center text-lg'>Loading friends...</h2>
-      </div>
-    );
-  }
+    <div className="h-screen w-screen flex justify-center items-center bg-gray-100">
+      <span className="loading loading-spinner loading-lg text-indigo-600"></span>
+    </div>
+  );
+}
 
+else if (friend.length === 0) {
+    return (
+    <div className="h-screen w-screen flex justify-center items-center bg-gray-100">
+      <h1 className='text-2xl font-bold text-center'>You have no friends yet</h1>
+      <p className='text-center'>Please add friends to chat with them</p>
+    </div>
+  );
+}
+else if (friend.length > 0) {
   return (
     <div className='w-10/10 overflow-auto md:w-3/10'>
       <div className='p-4 w-10/10'>
@@ -91,6 +143,8 @@ const friendspresent = useSelector((state) => state.user.friendspresent) || [];
       </div>
     </div>
   );
+}
+  
 };
 
 export default Middle;
