@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Ui from './divider/Ui';
 import Login from './user/Login';
@@ -7,14 +7,17 @@ import Addfriend from './user/Addfriend';
 import { useDispatch, useSelector } from 'react-redux';
 import { login, setonlineuser } from './redux/userslice';
 import { ToastContainer } from 'react-toastify';
-import { io } from 'socket.io-client';
+
 import ProtectedRoute from './ProtectedRoute';
+import socketcontext from './context/contextstate';
 
 
 const App = () => {
+  const socket = useContext(socketcontext);
+
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user.userInfo);
-  const url = import.meta.env.VITE_API_URL;
+ 
   const [loading, setLoading] = useState(true);
 
   // Load localStorage data into Redux before app renders
@@ -33,15 +36,8 @@ const App = () => {
 
   // Connect to socket only after user is logged in
   useEffect(() => {
-    if (!user) return;
+    if (!user || !socket) return;
 
-    const socket = io(url, {
-      transports: ['websocket'],
-      withCredentials: true,
-      query: {
-        logineduser: user.userId,
-      },
-    });
 
     socket.on('hello', (message) => {
       console.log(message);
@@ -59,13 +55,7 @@ const App = () => {
   }, [user]);
 
   // ✅ Wait until user info is loaded from localStorage
-  if (loading) {
-    return (
-      <div className="w-screen h-screen flex justify-center items-center">
-        <h1 className="text-xl font-semibold">Loading...</h1>
-      </div>
-    );
-  }
+  
   if (loading) {
   return (
     <div className="h-screen w-screen flex justify-center items-center bg-gray-100">

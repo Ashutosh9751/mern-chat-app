@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser';
 import { Server } from 'socket.io';
 import messagerouter from './routes/message.js'
 import Messagemodel from './models/message.js';
+import socketcontext from '../frontend/src/context/contextstate.js';
 const app = express();
 const server = createServer(app);
 

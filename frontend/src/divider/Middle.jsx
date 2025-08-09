@@ -76,21 +76,17 @@ const isLoggedIn=useSelector((state) => state.user.isLoggedIn);
   // ✅ Prevent crash on first render
 if(loading){
     return (
-    <div className="h-screen w-screen flex justify-center items-center bg-gray-100">
+        <div className='w-10/10 overflow-auto md:w-3/10 justify-center items-center h-screen flex'>
+    
       <span className="loading loading-spinner loading-lg text-indigo-600"></span>
+      
+    
     </div>
   );
 }
 
-else if (friend.length === 0) {
-    return (
-    <div className="h-screen w-screen flex justify-center items-center bg-gray-100">
-      <h1 className='text-2xl font-bold text-center'>You have no friends yet</h1>
-      <p className='text-center'>Please add friends to chat with them</p>
-    </div>
-  );
-}
-else if (friend.length > 0) {
+
+else  {
   return (
     <div className='w-10/10 overflow-auto md:w-3/10'>
       <div className='p-4 w-10/10'>
