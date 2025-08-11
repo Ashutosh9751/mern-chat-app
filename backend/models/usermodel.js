@@ -24,8 +24,23 @@ dp:{
 createdAt:{
     type:Date,
     default:Date.now()
+},
+generateotp:{
+    type:String,
+    default:""
+},
+generateotptimeout:{
+    type:Date,
+    default:Date.now()
+},
+verifiedotp:{
+    type:String,
+    default:""
+},
+verifiedotptimeout:{
+    type:Date,
+    default:Date.now()
 }
-
 
 })
 

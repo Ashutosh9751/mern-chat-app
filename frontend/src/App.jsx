@@ -10,6 +10,7 @@ import { ToastContainer } from 'react-toastify';
 
 import ProtectedRoute from './ProtectedRoute';
 import socketcontext from './context/contextstate';
+import Forgetpassword from './user/Forgetpassword';
 
 
 const App = () => {
@@ -81,6 +82,7 @@ const App = () => {
           
           }
         />
+        <Route path='/forgot-password' element={<Forgetpassword />} />
       </Routes>
       <ToastContainer />
     </BrowserRouter>

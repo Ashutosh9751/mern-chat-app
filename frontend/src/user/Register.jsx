@@ -63,21 +63,30 @@ if (loading) {
       <div className='flex flex-col items-center  p-4 w-2xl m-4 ' style={{ backgroundColor: "rgba(254,254,255,255)" }}>
         <h1 className='text-xl font-bold'>Sign up</h1>
         <form onSubmit={submithandler} className='flex flex-col gap-y-2 '>
-          <div className="flex flex-col items-center justify-center w-full">
+    <div className="flex flex-col items-center justify-center w-full">
   <div className="relative h-20 w-20 rounded-full border-2 border-gray-800 bg-gray-200 mb-2 overflow-hidden cursor-pointer">
-    {/* SVG icon in center */}
-    <div className="absolute inset-0 flex items-center justify-center">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="gray"
-        viewBox="0 0 24 24"
-        className="w-10 h-10"
-      >
-        <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" />
-      </svg>
-    </div>
+    {dp ? (
+      // Show image preview
+      <img
+        src={URL.createObjectURL(dp)}
+        alt="Preview"
+        className="object-cover w-full h-full"
+      />
+    ) : (
+      // Show placeholder SVG
+      <div className="absolute inset-0 flex items-center justify-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="gray"
+          viewBox="0 0 24 24"
+          className="w-10 h-10"
+        >
+          <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z" />
+        </svg>
+      </div>
+    )}
 
-    {/* Actual file input styled to be transparent and clickable */}
+    {/* File input */}
     <input
       type="file"
       accept="image/*"
@@ -87,6 +96,7 @@ if (loading) {
     />
   </div>
 </div>
+
 
 
           <div>

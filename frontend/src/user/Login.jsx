@@ -117,6 +117,9 @@ const Login = () => {
           <button type='submit' className='text-white w-52 rounded-sm py-1 text-sm font-semibold' style={{ backgroundColor: "rgba(79,70,229,255)" }}>
             Sign in
           </button>
+          <div>
+            <p className='text-blue-600 cursor-pointer' onClick={() => { navigate('/forgot-password') }}>Forgot Password?</p>
+          </div>
           <div className='flex justify-between w-full text-sm font-semibold my-2' >
             <p className='text-gray-600 text-sm'>Have an account</p>
             <p className='text-blue-600 cursor-pointer' onClick={() => { navigate('/register') }}>Sign up</p>
