@@ -10,9 +10,18 @@ const Register = () => {
   const [password, setpassword] = useState("");
   const [phone, setphone] = useState("");
   const [dp, setdp] = useState("");
+  const [previewdp, setpreviewdp] = useState("");
   const navigate = useNavigate();
 
   const url = import.meta.env.VITE_API_URL;
+  const handleDpChange = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    setdp(file); // keep file for FormData
+    setpreviewdp(URL.createObjectURL(file)); // instant preview in <img>
+  }
+};
+
   const submithandler = async (e) => {
   e.preventDefault();
 setloading(true);
@@ -31,16 +40,14 @@ setloading(true);
       withCredentials: true
     });
 
-    if (response.data.message === "User created successfully") {
+    if (response.data.success) {
       toast.success(response.data.message);
       navigate('/login');
     }
-    else if (response.data.message === "User already exists please login") {
+    else if (response.data.success === false) {
       toast.info(response.data.message);
     }
-    else {
-      toast.error(response.data.message);
-    }
+    
   } catch (error) {
     console.error("Registration failed:", error);
   }
@@ -65,10 +72,10 @@ if (loading) {
         <form onSubmit={submithandler} className='flex flex-col gap-y-2 '>
     <div className="flex flex-col items-center justify-center w-full">
   <div className="relative h-20 w-20 rounded-full border-2 border-gray-800 bg-gray-200 mb-2 overflow-hidden cursor-pointer">
-    {dp ? (
+    {previewdp ? (
       // Show image preview
       <img
-        src={URL.createObjectURL(dp)}
+        src={previewdp}
         alt="Preview"
         className="object-cover w-full h-full"
       />
@@ -88,11 +95,13 @@ if (loading) {
 
     {/* File input */}
     <input
+    
       type="file"
       accept="image/*"
-      onChange={(e) => setdp(e.target.files[0])}
+      onChange={handleDpChange}
       required
       className="absolute inset-0 opacity-0 cursor-pointer"
+     
     />
   </div>
 </div>

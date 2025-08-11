@@ -55,7 +55,7 @@ const isLoggedIn=useSelector((state) => state.user.isLoggedIn);
       }
     };
     getfriends();
-  }, [ url, logininfo]);
+  }, [ url, logininfo,]);
   useEffect(() => {
     setfilterfriend(friend || []);
   }, [friend]);

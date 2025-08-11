@@ -55,7 +55,7 @@ let usersocketmap={};
 const getonlineuser=()=> Object.keys(usersocketmap);
 io.on('connection', (socket) => {
   const logineduser = socket.handshake.query.logineduser;
-  
+
   usersocketmap[logineduser] = socket.id;
 
  io.emit('online_users',getonlineuser());

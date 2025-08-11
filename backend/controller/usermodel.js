@@ -50,7 +50,7 @@ if (!username || !password || !email || !phone) {
     const isexist = await usermodel.findOne({ email });
 
     if (isexist) {
-        return res.json({
+        return res.json({ success: false,
             message: "User already exists please login"
         });
     }
@@ -73,17 +73,16 @@ if (!username || !password || !email || !phone) {
     };
     if (user) {
         await transporter.sendMail(mailOptions);
-        res.json({ success: true, data: {
-            message: "User created successfully",
-            user
-        }});
+        res.json({ success: true,
+            message: "User created successfully"
+        });
     } else {
         res.json({ success: false, message: "User creation failed" });
     }
     
    } catch (error) {
        console.error("Error creating user:", error);
-       res.status(500).json({
+       res.status(500).json({ success: false,
            message: "Internal server error"
        });
    }

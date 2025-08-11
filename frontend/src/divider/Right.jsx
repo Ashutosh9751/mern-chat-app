@@ -1,4 +1,4 @@
-import React, {useState, useEffect,useRef } from 'react'
+import React, {useState, useEffect,useRef, useContext } from 'react'
 import bg from '../assets/tbackground.jpg'
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -6,7 +6,7 @@ import { IoMdArrowRoundBack } from "react-icons/io";
 import { onChatScreen } from '../redux/userslice';
 import { IoSendSharp } from "react-icons/io5";
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import socketcontext from '../context/contextstate';
 import { setonlineuser } from '../redux/userslice';
 import { incrementUnread } from '../redux/userslice';
 import { toast } from 'react-toastify';
@@ -14,6 +14,12 @@ import { toast } from 'react-toastify';
 
 const Right = () => {
   
+  const messagesEndRef = useRef(null);
+const scrollToBottom = () => {
+  messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+};
+
+
   const [ismobile, setismobile] = useState(window.innerWidth < 768);
   const dispatch = useDispatch();
   const [message, setMessage] = useState('');
@@ -23,8 +29,7 @@ const Right = () => {
   const selectedUser = useSelector((state) => state.user?.selectedUser);
   
    const url = import.meta.env.VITE_API_URL;
-  const socketUrl = import.meta.env.VITE_SOCKET_URL;
-
+  
   function playNotificationSound() {
   const audio = new Audio('sounds/notification.mp3'); // Place this file in `public/`
   audio.play().catch(err => console.error('Audio play failed:', err));
@@ -37,33 +42,32 @@ useEffect(() => {
 }, [ChatScreen]);
 
 const [receivedmessage, setreceivedmessage] = useState([]);
-  const socket = useRef();
+  useEffect(() => {
+  scrollToBottom();
+}, [receivedmessage]);
   // Function to handle form submission
   // This function sends the message to the server when the form is submitted
-  useEffect(() => {
-  if (!logineduser?.userId) return;
-  if (logineduser) {
-    socket.current = io(socketUrl, {
-      transports: ['websocket'],
-      withCredentials: true,
-      query: { logineduser: logineduser.userId }
-    });
+const socket=useContext(socketcontext);
 
-    socket.current.on('online_users', (userIds) => {
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('online_users', (userIds) => {
       dispatch(setonlineuser(userIds));
     });
 
-    socket.current.on('disconnect', () => {
+    socket.on('disconnect', () => {
       console.log('Socket disconnected');
     });
 
-    return () => {
-      socket.current.disconnect();
-    };
-  }
-}, [logineduser?.userId]);
+   return () => {
+  socket.off('online_users');
+  socket.off('disconnect');
+};
+
+  }, [logineduser?.userId]);
 useEffect(() => {
-  if (!socket.current) return;
+  if (!socket) return;
 
 const listener = (newMessage, sendername) => {
   const isChatScreen = chatScreenRef.current;
@@ -90,10 +94,10 @@ const listener = (newMessage, sendername) => {
 };
 
 
-  socket.current.on('receive_message', listener);
+  socket.on('receive_message', listener);
 
   return () => {
-    socket.current.off('receive_message', listener); // clean up old listener
+    socket.off('receive_message', listener); // clean up old listener
   };
 }, [selectedUser?.user?._id, logineduser?.userId]);
 
@@ -110,7 +114,7 @@ const listener = (newMessage, sendername) => {
   };
 
   // Emit message
-  socket.current.emit('send_message', msgData);
+  socket.emit('send_message', msgData);
 
   // Optimistic update: show the message instantly
   setreceivedmessage((prev) => [
@@ -128,7 +132,7 @@ const listener = (newMessage, sendername) => {
   setMessage('');
 
   // Wait for server confirmation
-  socket.current.on('message_sent_ack', (confirmedMessage) => {
+  socket.on('message_sent_ack', (confirmedMessage) => {
     setreceivedmessage((prev) =>
       prev.map((msg) =>
         msg.temp && msg.message === confirmedMessage.message
@@ -230,6 +234,7 @@ const listener = (newMessage, sendername) => {
 
         )
        })}
+       <div ref={messagesEndRef} />
         </div>
 
         {/* Message input field and send button */}

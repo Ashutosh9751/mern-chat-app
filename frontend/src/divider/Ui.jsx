@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Left from './Left';
 import Middle from './Middle';
 import Right from './Right';
-import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
+
+import {  useSelector } from 'react-redux';
 
 const Ui = () => {
   const [onchat, setonchat] = useState(false);

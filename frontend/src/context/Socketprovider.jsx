@@ -1,37 +1,49 @@
 import { io } from "socket.io-client";
 import socketcontext from "./contextstate";
-import { useRef,useEffect} from "react";
+import { useEffect, useState} from "react";
 import { useSelector } from "react-redux";
-import React from 'react'
+
 
 const Socketprovider = ({children}) => {
       const url = import.meta.env.VITE_SOCKET_URL;
   const user = useSelector((state) => state.user.userInfo);
-  const socketRef = useRef(null);
+  const [socket, setsocket] = useState(null);
 
   useEffect(() => {
-     if (!user?.userId) return;
+       if (!user?.userId) {
+      if (socket) {
+        socket.disconnect();
+        setsocket(null);
+      }
+      return;
+    }
     
-    socketRef.current = io(url, {
+    const s = io(url, {
       transports: ["websocket"],
       withCredentials: true,
       query: { logineduser: user.userId },
     });
 
-    socketRef.current.on('connect', () => {
+    s.on('connect', () => {
       console.log('Connected to socket server');
     });
+    setsocket(s);
 
-    return () => {
-      socketRef.current.disconnect();
-    };
-  }, [user,url, socketRef]);
+  }, [user?.userId,url]);
+
+ if (user?.userId && !socket) {
+    return <div className="h-screen w-screen flex justify-center items-center bg-gray-100">
+      <span className="loading loading-spinner loading-lg text-indigo-600"></span>
+    </div>;
+  }
 
   return (
-    <socketcontext.Provider value={socketRef.current}>
+    <socketcontext.Provider value={socket}>
       {children}
     </socketcontext.Provider>
-  )
+  );
+
+
 }
 
 export default Socketprovider

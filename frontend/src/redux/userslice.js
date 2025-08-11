@@ -10,7 +10,7 @@ const userslice = createSlice({
         onlineuser: [],
         currentChatUserId: null,
         unreadMessages: {},
-        
+        friends: []
     },
     reducers: {
         login: (state, action) => {
@@ -54,9 +54,12 @@ const userslice = createSlice({
             const userId = action.payload;
             delete state.unreadMessages[userId];
         },
-      
+        setfriends: (state, action) => {
+            state.friends = action.payload;
+        }
+
     }
     })
 
-export const { login, logout, selectUser, onChatScreen, setonlineuser, setCurrentChatUserId, incrementUnread, clearUnread} = userslice.actions;
+export const { login, logout, selectUser, onChatScreen, setonlineuser, setCurrentChatUserId, incrementUnread, clearUnread, setfriends } = userslice.actions;
 export default userslice.reducer;

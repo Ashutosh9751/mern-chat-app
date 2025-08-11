@@ -51,8 +51,8 @@ const App = () => {
     socket.on('disconnect', () => {
       console.log('disconnected from server');
     });
+ 
 
-    return () => socket.disconnect();
   }, [user]);
 
   // ✅ Wait until user info is loaded from localStorage
