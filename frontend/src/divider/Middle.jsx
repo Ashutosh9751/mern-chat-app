@@ -110,6 +110,8 @@ else  {
               </div>
             ) : (
               filterfriend.map((item) => (
+                console.log(unreadMessages),
+                console.log(unreadMessages[item.user._id]),
                 <div key={item._id} onClick={() => { onclickhandler(item) }}>
                   <div className='flex hover:bg-gray-200'>
                     <div className={`avatar ${onlineuser.includes(item.user._id) ? 'avatar-online' : 'avatar-offline'}`}>
@@ -123,7 +125,7 @@ else  {
   </h2>
   
   {unreadMessages[item.user._id] > 0 && (
-    <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center">
+    <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded-full min-w-[20px] text-center ">
       {unreadMessages[item.user._id]}
     </span>
   )}

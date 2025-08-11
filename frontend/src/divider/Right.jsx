@@ -72,10 +72,7 @@ useEffect(() => {
 const listener = (newMessage, sendername) => {
   const isChatScreen = chatScreenRef.current;
   const selectedId = selectedUser?.user?._id;
-  const isCurrentChat =
-    isChatScreen &&
-    selectedId &&
-    ((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
+  const isCurrentChat =((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
       (newMessage.receiver === selectedId && newMessage.sender === logineduser.userId));
 
   if (isCurrentChat) {

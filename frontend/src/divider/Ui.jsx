@@ -52,11 +52,20 @@ const Ui = () => {
       <div className='w-screen h-screen flex'>
         <Left />
         <Middle  />
+        <div className='hidden '>
+        <Right/>
+
+        </div>
       </div>
     );
   } else if (ismobile && onchat) {
     return (
       <div className='w-screen h-screen flex'>
+        <div className='hidden '>
+          <Left/>
+          <Middle />
+        </div>
+        
         <Right />
       </div>
     );
