@@ -70,7 +70,7 @@ const Forgetpassword = () => {
   if (step === 1) {
     return (
       <div className='outer flex h-screen w-screen justify-center items-center flex-col'>
-        <div className='outertwo flex flex-col  items-center w-60 h-3/4 border border-gray-300 rounded-2xl relative'>
+        <div className='outertwo flex flex-col  items-center w-full h-full border border-gray-300 rounded-2xl relative'>
           <div className='bg-violet-500  top-0 w-full h-28 flex flex-col justify-between rounded-t-2xl mb-10'>
             <div className='flex justify-start mt-6 gap-x-2'>
               <div className='flex justify-center items-center'>
@@ -92,17 +92,17 @@ const Forgetpassword = () => {
               <h2> Enter your email</h2>
 
             </div>
-            <div>
+            <div className='w-full px-4'>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className='border border-gray-300 rounded-xl p-2 '
+                className='border border-gray-300 rounded-xl p-2 w-full '
               />
             </div>
             <div className='w-full px-4'>
-              <button className='btn bg-violet-500 border rounded-xl text-white w-full p-0' onClick={generateOtp}>Generate OTP</button>
+              <button className='btn bg-violet-500 border rounded-xl text-white w-full ' onClick={generateOtp}>Generate OTP</button>
 
             </div>
             <div className='w-full flex justify-center px-7'>
@@ -124,8 +124,8 @@ const Forgetpassword = () => {
   if (step === 2) {
     return (
       <div className='outer flex h-screen w-screen justify-center items-center flex-col'>
-        <div className='outertwo flex flex-col  items-center w-60 h-3/4 border border-gray-300 rounded-2xl relative'>
-           <div className='bg-violet-500  top-0 w-full h-28 flex flex-col justify-between rounded-t-2xl mb-10'>
+        <div className='outertwo flex flex-col  items-center w-full h-full border border-gray-300 rounded-2xl relative'>
+           <div  className='bg-violet-500  top-0 w-full h-28 flex flex-col justify-between rounded-t-2xl mb-10'>
             <div className='flex justify-start mt-6 gap-x-2'>
               <div className='flex justify-center items-center'>
              <FaArrowLeft  className='text-white text-3xl' onClick={() =>setStep(1)}/>
@@ -143,17 +143,17 @@ const Forgetpassword = () => {
               <h2>Verify OTP</h2>
 
             </div>
-            <div>
+            <div className='w-full px-4'>
               <input
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="Enter OTP"
-                className='border border-gray-300 rounded-xl p-2 '
+                className='border border-gray-300 rounded-xl p-2 w-full'
               />
             </div>
             <div className='w-full px-4'>
-              <button className='btn bg-violet-500 border rounded-xl text-white w-full p-0' onClick={verifyOtp}>Verify OTP</button>
+              <button className='btn bg-violet-500 border rounded-xl text-white w-full' onClick={verifyOtp}>Verify OTP</button>
 
             </div>
              <div className='w-full flex justify-center px-7'>
@@ -173,7 +173,7 @@ const Forgetpassword = () => {
     return (
           
       <div className='outer flex h-screen w-screen justify-center items-center flex-col'>
-        <div className='outertwo flex flex-col  items-center w-60 h-3/4 border border-gray-300 rounded-2xl relative'>
+        <div className='outertwo flex flex-col  items-center w-screen h-screen border border-gray-300 rounded-2xl relative'>
            <div className='bg-violet-500  top-0 w-full h-28 flex flex-col justify-between rounded-t-2xl mb-10'>
             <div className='flex justify-start mt-6 gap-x-2'>
               <div className='flex justify-center items-center'>
@@ -189,20 +189,20 @@ const Forgetpassword = () => {
           </div>
  <div className=' body flex flex-col justify-center items-center gap-y-3 '>
   <div>
-        <h2>Step 3: Reset Password</h2>
+        <h2> Reset Password</h2>
 
   </div>
-  <div>
+  <div className='w-full px-4'>
      <input
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           placeholder="Enter new password"
-           className='border border-gray-300 rounded-xl p-2 '
+           className='border border-gray-300 rounded-xl p-2 w-full '
         />
   </div>
   <div className='w-full flex justify-center px-7'>
-   <button onClick={updatePassword} className='btn bg-violet-500 border rounded-xl text-white w-full p-0'>Update Password</button>
+   <button onClick={updatePassword} className='btn bg-violet-500 border rounded-xl text-white w-full'>Update Password</button>
   </div>
  <div className='w-full flex justify-center px-7'>
               <p className='text-sm text-gray-500'>
