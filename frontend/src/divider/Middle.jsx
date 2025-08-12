@@ -110,8 +110,7 @@ else  {
               </div>
             ) : (
               filterfriend.map((item) => (
-                console.log(unreadMessages),
-                console.log(unreadMessages[item.user._id]),
+                
                 <div key={item._id} onClick={() => { onclickhandler(item) }}>
                   <div className='flex hover:bg-gray-200'>
                     <div className={`avatar ${onlineuser.includes(item.user._id) ? 'avatar-online' : 'avatar-offline'}`}>

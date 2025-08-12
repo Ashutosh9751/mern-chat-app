@@ -75,28 +75,29 @@ const listener = (newMessage, sendername) => {
   const isCurrentChat =((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
       (newMessage.receiver === selectedId && newMessage.sender === logineduser.userId));
 
-  if (isCurrentChat) {
+  if (isCurrentChat && isChatScreen) {
     setreceivedmessage((prevMessages) => [...prevMessages, newMessage]);
     playNotificationSound();
-  } else {
-    playNotificationSound();
-    dispatch(incrementUnread(newMessage.sender));
 
-    if (!isChatScreen) {
-      toast.error(`New message from ${sendername || "someone"}`);
-    } else {
+  } else if (!isChatScreen) {
+
       toast.success(`New message from ${sendername || "someone"}`);
+         playNotificationSound();
+    dispatch(incrementUnread(newMessage.sender));
     }
-  }
-};
-
+    else if(!isCurrentChat){
+      toast.success(`New message from ${sendername || "someone"}`);
+      playNotificationSound();
+      dispatch(incrementUnread(newMessage.sender));
+    }
+  };
 
   socket.on('receive_message', listener);
 
   return () => {
     socket.off('receive_message', listener); // clean up old listener
   };
-}, [selectedUser?.user?._id, logineduser?.userId]);
+}, [selectedUser?.user?._id, logineduser?.userId,receivedmessage]);
 
 
   const submithandler = async (e) => {
@@ -188,7 +189,7 @@ const listener = (newMessage, sendername) => {
         style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
 
-        <div className='flex w-full bg-black p-1'>
+        <div className='flex w-full bg-black p-1 relative'>
 
           <IoMdArrowRoundBack
             className='text-white text-4xl mr-2'
