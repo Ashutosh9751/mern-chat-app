@@ -11,6 +11,7 @@ import messagerouter from './routes/message.js'
 import Messagemodel from './models/message.js';
 
 import passwordrouter from './routes/password.js';
+import friendsmodel from './models/friends.js';
 const app = express();
 const server = createServer(app);
 
@@ -61,26 +62,40 @@ io.on('connection', (socket) => {
  io.emit('online_users',getonlineuser());
 
   // Handle send_message event
-  socket.on('send_message', async ({ senderid,sendername, receiverid, message }) => {
-    try {
-      const newMessage = await Messagemodel.create({
-        sender: senderid,
-        receiver: receiverid,
-        message: message
-      });
+ socket.on('send_message', async ({ senderid, sendername, receiverid, message }) => {
+  try {
+    // Save the message
+    const newMessage = await Messagemodel.create({
+      sender: senderid,
+      receiver: receiverid,
+      message: message
+    });
 
-      // Emit to receiver if online
-      const receiverSocketId = usersocketmap[receiverid];
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit('receive_message', newMessage, sendername);
-      }
+    // Find custom name from receiver's friends list
+    const friendDoc = await friendsmodel.findOne(
+      { userId: senderid, "friends.user": receiverid },
+      { "friends.$": 1 }
+    );
 
-      // Optionally, emit back to sender too
-      socket.emit('message_sent_ack', newMessage);
-    } catch (error) {
-      console.error('Error in send_message:', error);
+    let customName = null;
+    if (friendDoc && friendDoc.friends.length > 0) {
+      customName = friendDoc.friends[0].customname || null;
     }
-  });
+
+    // Emit to receiver if online
+    const receiverSocketId = usersocketmap[receiverid];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('receive_message', newMessage, customName || sendername);
+    }
+
+    // Acknowledge sender
+    socket.emit('message_sent_ack', newMessage);
+
+  } catch (error) {
+    console.error('Error in send_message:', error);
+  }
+});
+
 
   socket.on('disconnect', () => {
 
