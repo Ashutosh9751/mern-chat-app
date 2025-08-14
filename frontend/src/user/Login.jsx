@@ -10,10 +10,12 @@ const Login = () => {
   const [password, setpassword] = useState("");
   const dispatch = useDispatch();
   const url = import.meta.env.VITE_API_URL;
+  const [loading, setloading] = useState(false);
   const submithandler =async(e) => {
     e.preventDefault();
 
     try {
+      setloading(true);
       const response=await axios.post(`${url}/user/login`, {
       
       email,
@@ -47,6 +49,16 @@ const Login = () => {
   } catch (error) {
     console.error(error);
   }
+  finally {
+      setloading(false);
+    }
+}
+ if (loading) {
+  return (
+    <div className="h-screen w-screen flex justify-center items-center bg-gray-100">
+      <span className="loading loading-spinner loading-lg text-indigo-600"></span>
+    </div>
+  );
 }
 
   return (
