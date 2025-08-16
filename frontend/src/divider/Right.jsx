@@ -223,18 +223,20 @@ useEffect(() => {
     
     socket.on("call-made", async ({ offer, from }) => {
  pcRef.current=createPeerConnection();
-      setisvideoscreen(true)
-    await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
       const stream = await navigator.mediaDevices.getUserMedia({video:true,audio: true });
+
+      setisvideoscreen(true)
     setVideoStream(stream);
      if (videosrcref.current) {
       videosrcref.current.srcObject = stream;
     }
     stream.getTracks().forEach(track => pcRef.current.addTrack(track, stream));
+    await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
 
     const answer = await pcRef.current.createAnswer();
     await pcRef.current.setLocalDescription(answer);
     socket.emit("make-answer", { answer, to: from });
+    setisvideoscreen(true);
   });
 
   // Listen for incoming answer
