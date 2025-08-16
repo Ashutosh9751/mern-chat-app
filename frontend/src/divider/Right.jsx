@@ -225,7 +225,7 @@ useEffect(() => {
  pcRef.current=createPeerConnection();
       setisvideoscreen(true)
     await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-      const stream = await navigator.mediaDevices.getUserMedia({audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({video:true,audio: true });
     setVideoStream(stream);
      if (videosrcref.current) {
       videosrcref.current.srcObject = stream;
