@@ -59,6 +59,36 @@ io.on('connection', (socket) => {
 
   usersocketmap[logineduser] = socket.id;
 
+socket.on("call-user", async ({ offer, to }) => {
+  console.log(offer,to);
+  const targetSocketId = usersocketmap[to]; // `to` is userId
+  if (targetSocketId) {
+    io.to(targetSocketId).emit("call-made", { offer, from: logineduser });
+  }
+});
+socket.on("ice-candidate", ({ to, candidate }) => {
+  console.log(candidate,to);
+  const targetSocketId = usersocketmap[to];
+  if (targetSocketId) {
+    io.to(targetSocketId).emit("ice-candidate", { candidate, from: logineduser });
+  }
+});
+
+ socket.on("make-answer", ({ answer, to }) => {
+  // "to" here should be the caller's userId
+  const targetSocketId = usersocketmap[to];
+  if (targetSocketId) {
+    io.to(targetSocketId).emit("answer-made", {
+      answer,
+      from: logineduser // callee's userId
+    });
+  }
+});
+
+
+
+
+
  io.emit('online_users',getonlineuser());
 
   // Handle send_message event

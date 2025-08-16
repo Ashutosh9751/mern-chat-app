@@ -1,10 +1,12 @@
-import React, {useState, useEffect,useRef, useContext } from 'react'
+import React, { useState, useEffect, useRef, useContext } from 'react'
 import bg from '../assets/tbackground.jpg'
 
 import { useDispatch, useSelector } from 'react-redux';
 import { IoMdArrowRoundBack } from "react-icons/io";
 import { onChatScreen } from '../redux/userslice';
 import { IoSendSharp } from "react-icons/io5";
+import { IoMdCall } from "react-icons/io";
+import { MdOutlineVideoCall } from "react-icons/md";
 import axios from 'axios';
 import socketcontext from '../context/contextstate';
 import { setonlineuser } from '../redux/userslice';
@@ -13,13 +15,16 @@ import { toast } from 'react-toastify';
 
 
 const Right = () => {
-  
+
   const messagesEndRef = useRef(null);
-const scrollToBottom = () => {
-  messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-};
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-
+const [videoStream, setVideoStream] = useState(null);
+const videosrcref = useRef(null);
+  const [isvideoscreen, setisvideoscreen] = useState(false);
+const pcRef=useRef(null)
   const [ismobile, setismobile] = useState(window.innerWidth < 768);
   const dispatch = useDispatch();
   const [message, setMessage] = useState('');
@@ -27,27 +32,27 @@ const scrollToBottom = () => {
 
   const logineduser = useSelector((state) => state.user?.userInfo);
   const selectedUser = useSelector((state) => state.user?.selectedUser);
-  
-   const url = import.meta.env.VITE_API_URL;
-  
+const remoteVideoRef = useRef();
+  const url = import.meta.env.VITE_API_URL;
+
   function playNotificationSound() {
-  const audio = new Audio('sounds/notification.mp3'); // Place this file in `public/`
-  audio.play().catch(err => console.error('Audio play failed:', err));
-}
+    const audio = new Audio('sounds/notification.mp3'); // Place this file in `public/`
+    audio.play().catch(err => console.error('Audio play failed:', err));
+  }
 
-const chatScreenRef = useRef(ChatScreen);
+  const chatScreenRef = useRef(ChatScreen);
 
-useEffect(() => {
-  chatScreenRef.current = ChatScreen;
-}, [ChatScreen]);
-
-const [receivedmessage, setreceivedmessage] = useState([]);
   useEffect(() => {
-  scrollToBottom();
-}, [receivedmessage]);
+    chatScreenRef.current = ChatScreen;
+  }, [ChatScreen]);
+
+  const [receivedmessage, setreceivedmessage] = useState([]);
+  useEffect(() => {
+    scrollToBottom();
+  }, [receivedmessage]);
   // Function to handle form submission
   // This function sends the message to the server when the form is submitted
-const socket=useContext(socketcontext);
+  const socket = useContext(socketcontext);
 
   useEffect(() => {
     if (!socket) return;
@@ -60,86 +65,86 @@ const socket=useContext(socketcontext);
       console.log('Socket disconnected');
     });
 
-   return () => {
-  socket.off('online_users');
-  socket.off('disconnect');
-};
+    return () => {
+      socket.off('online_users');
+      socket.off('disconnect');
+    };
 
   }, [logineduser?.userId]);
-useEffect(() => {
-  if (!socket) return;
+  useEffect(() => {
+    if (!socket) return;
 
-const listener = (newMessage, sendername) => {
-  const isChatScreen = chatScreenRef.current;
-  const selectedId = selectedUser?.user?._id;
-  const isCurrentChat =((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
-      (newMessage.receiver === selectedId && newMessage.sender === logineduser.userId));
+    const listener = (newMessage, sendername) => {
+      const isChatScreen = chatScreenRef.current;
+      const selectedId = selectedUser?.user?._id;
+      const isCurrentChat = ((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
+        (newMessage.receiver === selectedId && newMessage.sender === logineduser.userId));
 
-  if (isCurrentChat && isChatScreen) {
-    setreceivedmessage((prevMessages) => [...prevMessages, newMessage]);
-    playNotificationSound();
+      if (isCurrentChat && isChatScreen) {
+        setreceivedmessage((prevMessages) => [...prevMessages, newMessage]);
+        playNotificationSound();
 
-  } else if (!isChatScreen) {
+      } else if (!isChatScreen) {
 
-      toast.success(`New message from ${sendername || "someone"}`);
-         playNotificationSound();
-    dispatch(incrementUnread(newMessage.sender));
-    }
-    else if(!isCurrentChat){
-      toast.success(`New message from ${sendername || "someone"}`);
-      playNotificationSound();
-      dispatch(incrementUnread(newMessage.sender));
-    }
-  };
+        toast.success(`New message from ${sendername || "someone"}`);
+        playNotificationSound();
+        dispatch(incrementUnread(newMessage.sender));
+      }
+      else if (!isCurrentChat) {
+        toast.success(`New message from ${sendername || "someone"}`);
+        playNotificationSound();
+        dispatch(incrementUnread(newMessage.sender));
+      }
+    };
 
-  socket.on('receive_message', listener);
+    socket.on('receive_message', listener);
 
-  return () => {
-    socket.off('receive_message', listener); // clean up old listener
-  };
-}, [selectedUser?.user?._id, logineduser?.userId,receivedmessage]);
+    return () => {
+      socket.off('receive_message', listener); // clean up old listener
+    };
+  }, [selectedUser?.user?._id, logineduser?.userId, receivedmessage]);
 
 
   const submithandler = async (e) => {
-  e.preventDefault();
-  if (!message.trim()) return;
+    e.preventDefault();
+    if (!message.trim()) return;
 
-  const msgData = {
-    senderid: logineduser.userId,
-   sendername: logineduser.username,
-    receiverid: selectedUser.user._id,
-    message,
-  };
-
-  // Emit message
-  socket.emit('send_message', msgData);
-
-  // Optimistic update: show the message instantly
-  setreceivedmessage((prev) => [
-    ...prev,
-    {
-      _id: Date.now(),
-      sender: logineduser.userId,
-      receiver: selectedUser.user._id,
+    const msgData = {
+      senderid: logineduser.userId,
+      sendername: logineduser.username,
+      receiverid: selectedUser.user._id,
       message,
-      createdAt: new Date().toISOString(),
-      temp: true, // mark as temporary
-    },
-  ]);
+    };
 
-  setMessage('');
+    // Emit message
+    socket.emit('send_message', msgData);
 
-  // Wait for server confirmation
-  socket.on('message_sent_ack', (confirmedMessage) => {
-    setreceivedmessage((prev) =>
-      prev.map((msg) =>
-        msg.temp && msg.message === confirmedMessage.message
-          ? confirmedMessage // replace dummy with real message
-          : msg
-      )
-    );
-  });
-};
+    // Optimistic update: show the message instantly
+    setreceivedmessage((prev) => [
+      ...prev,
+      {
+        _id: Date.now(),
+        sender: logineduser.userId,
+        receiver: selectedUser.user._id,
+        message,
+        createdAt: new Date().toISOString(),
+        temp: true, // mark as temporary
+      },
+    ]);
+
+    setMessage('');
+
+    // Wait for server confirmation
+    socket.on('message_sent_ack', (confirmedMessage) => {
+      setreceivedmessage((prev) =>
+        prev.map((msg) =>
+          msg.temp && msg.message === confirmedMessage.message
+            ? confirmedMessage // replace dummy with real message
+            : msg
+        )
+      );
+    });
+  };
 
 
   //get messages from the server
@@ -154,7 +159,7 @@ const listener = (newMessage, sendername) => {
 
       })
         .then((response) => {
-         setreceivedmessage(response.data);
+          setreceivedmessage(response.data);
         })
         .catch((error) => {
           console.error('Error retrieving messages:', error);
@@ -174,65 +179,229 @@ const listener = (newMessage, sendername) => {
     window.addEventListener('resize', handlesize);
     return () => window.removeEventListener('resize', handlesize);
   }, []);
+useEffect(() => {
+  if (isvideoscreen && videosrcref.current && videoStream) {
+    videosrcref.current.srcObject = videoStream;
+  }
+}, [isvideoscreen, videoStream]);
+const createPeerConnection = () => {
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  });
+
+  pc.ontrack = (event) => {
+    const [remoteStream] = event.streams;
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  };
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit("ice-candidate", {
+        candidate: event.candidate,
+        to: selectedUser.user._id
+      });
+    }
+  };
+   socket.on("ice-candidate", async ({ candidate }) => {
+      try {
+        await pc.addIceCandidate(candidate);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+  return pc;
+};
+
+useEffect(() => {
+  if(!socket){
+    return ;
+  }
+
+    
+    socket.on("call-made", async ({ offer, from }) => {
+ pcRef.current=createPeerConnection();
+      setisvideoscreen(true)
+    await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+      const stream = await navigator.mediaDevices.getUserMedia({audio: true });
+    setVideoStream(stream);
+     if (videosrcref.current) {
+      videosrcref.current.srcObject = stream;
+    }
+    stream.getTracks().forEach(track => pcRef.current.addTrack(track, stream));
+
+    const answer = await pcRef.current.createAnswer();
+    await pcRef.current.setLocalDescription(answer);
+    socket.emit("make-answer", { answer, to: from });
+  });
+
+  // Listen for incoming answer
+  socket.on("answer-made", async ({ answer, from }) => {
+    console.log(from,answer)
+    await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+  });
+
+  return () => {
+ socket.off("call-made");
+      socket.off("answer-made");
+      socket.off("ice-candidate");
+      socket.off("call-ended");
+  };
+
+}, [socket])
+  const cleanupCall = () => {
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      setVideoStream(null);
+    }
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+   if (videosrcref.current) {
+    videosrcref.current.srcObject = null;
+  }
+    setisvideoscreen(false);
+  };
+const handleVideoCall = async () => {
+  pcRef.current=createPeerConnection();
+  const cameras = await getConnectedDevices('videoinput');
+  if (cameras && cameras.length > 0) {
+    const stream = await openCamera(cameras[0].deviceId);
+    setVideoStream(stream); // store MediaStream in state
+    setisvideoscreen(true); // trigger video element render
+   if (videosrcref.current) {
+      videosrcref.current.srcObject = stream;
+    }
+    stream.getTracks().forEach(track => {
+      pcRef.current.addTrack(track, stream);
+    });
+      const offer = await pcRef.current.createOffer();
+    await pcRef.current.setLocalDescription(offer);
+    socket.emit("call-user", { offer, to:selectedUser.user._id });
+  }
+};
+async function getConnectedDevices(type) {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter(device => device.kind === type)
+}
+async function openCamera(cameraId) {
+    const constraints = {
+        'audio': {'echoCancellation': true},
+        'video': {
+            'deviceId': cameraId,
+          
+            }
+        }
+
+    return await navigator.mediaDevices.getUserMedia(constraints);
+}
+ 
 
 
+ if(isvideoscreen) {
+  return (
+     <div className="w-screen h-screen bg-black relative flex justify-center items-center">
+    
+    {/* Remote video fills entire screen */}
+    <video
+      ref={remoteVideoRef}
+      autoPlay
+      playsInline
+      controls={false}
+      className="w-full h-full object-cover"
+    />
 
+    {/* Local video as picture-in-picture */}
+    <video
+      ref={videosrcref}
+      autoPlay
+      playsInline
+      muted
+      controls={false}
+      className="w-1/4 h-1/4 object-cover rounded-lg absolute bottom-4 right-4 shadow-lg border-2 border-white"
+    />
 
-  // Render the chat screen or a message to select a user
-  // If ChatScreen is true, it renders the chat interface; otherwise, it prompts the user to select a user to chat with.
-  // The chat interface includes a back button, the selected user's avatar and name, and a message input field with a send button.
-  // The message input field allows the user to type a message, and the send button sends
-  if ((!ismobile && ChatScreen) || (ismobile && ChatScreen)) {
+    {/* End Call button */}
+    <button
+      onClick={cleanupCall}
+      className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition"
+    >
+      End Call
+    </button>
+  </div>
+  );
+}
+
+ else if ((!ismobile && ChatScreen && !isvideoscreen) || (ismobile && ChatScreen && !isvideoscreen)) {
     return (
       <div
         className={`${!ismobile ? 'md:w-6/10' : 'w-screen'} h-screen overflow-hidden flex flex-col justify-between items-center`}
         style={{ backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
 
-        <div className='flex w-full bg-black p-1 relative'>
+        <div className='flex w-full bg-black p-1 relative h-16 items-center justify-between'>
 
           <IoMdArrowRoundBack
             className='text-white text-4xl mr-2'
             onClick={() => dispatch(onChatScreen(false))}
           />
-          <div className="avatar flex items-center">
-            <div className="w-12 rounded-full">
-              <img src={selectedUser?.user.dp} />
+          <div className=" flex items-center justify-between w-full h-full">
+            <div className='flex items-center '>
+              <div className="w-12 h-12 rounded-full">
+                <img src={selectedUser?.user.dp} className='w-full h-full object-cover rounded-full' />
+              </div>
+              <div className='ml-2 h-full'>
+                <h2 className='text-lg font-bold text-white'>{selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname}</h2>
+              </div>
             </div>
-            <div className='ml-2'>
-              <h2 className='text-lg font-bold text-white'>{selectedUser?.customname==""?selectedUser?.user.username:selectedUser?.customname}</h2>
+      
+            <div className='flex items-center justify-center h-full pr-4 gap-x-5'>
+              <div className='cursor-pointer  rounded-full bg-green-400 hover:bg-green-500 transition duration-200'>
+              <IoMdCall className='text-white text-4xl'/>
+
+              </div>
+              <div className='cursor-pointer  rounded-full bg-green-400 hover:bg-green-500 transition duration-200'>
+              <MdOutlineVideoCall className='text-white text-4xl ml-2' onClick={handleVideoCall}/>
+
+              </div>
             </div>
           </div>
         </div>
         <div className='w-full h-4/5 overflow-y-scroll flex flex-col  items-center'>
-   {receivedmessage.map((msg)=>{
-        return (
-          <div key={msg._id} className={`${msg.sender === logineduser.userId ? 'chat chat-end text-green-100' : 'chat chat-start'} w-full`}>
-   <div className="chat chat-start ">
-  <div className="chat-image avatar">
-    <div className="w-10 rounded-full">
-  
-    
-    </div>
-  </div>
-  <div className="chat-header ">
-    <h1>
-    {msg.sender === logineduser.userId ? logineduser?.username : selectedUser?.customname=="" ? selectedUser?.user.username : selectedUser?.customname}
+          {receivedmessage.map((msg) => {
+            return (
+              <div key={msg._id} className={`${msg.sender === logineduser.userId ? 'chat chat-end text-green-100' : 'chat chat-start'} w-full`}>
+                <div className="chat chat-start ">
+                  <div className="chat-image avatar">
+                    <div className="w-10 rounded-full">
 
-    </h1>
-    <time className="text-xs opacity-50">
-  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-</time>
 
-  </div>
-  <div className="chat-bubble">{msg.message}</div>
-  <div className="chat-footer opacity-50">Delivered</div>
-</div>
-</div>
+                    </div>
+                  </div>
+                  <div className="chat-header ">
+                    <h1>
+                      {msg.sender === logineduser.userId ? logineduser?.username : selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname}
 
-        )
-       })}
-       <div ref={messagesEndRef} />
+                    </h1>
+                    <time className="text-xs opacity-50">
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </time>
+
+                  </div>
+                  <div className="chat-bubble">{msg.message}</div>
+                  <div className="chat-footer opacity-50">Delivered</div>
+                </div>
+              </div>
+
+            )
+          })}
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Message input field and send button */}
