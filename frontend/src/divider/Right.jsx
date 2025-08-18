@@ -284,7 +284,7 @@ const Right = () => {
         stream.getTracks().forEach((track) => {
           pcRef.current.addTrack(track, stream);
         });
-      }
+      
       if (localvideoref.current) {
         localvideoref.current.srcObject = stream;
       }
@@ -310,7 +310,7 @@ const Right = () => {
         to: from,
       });
 
-
+    }
     });
 
     // Receiving an answer
