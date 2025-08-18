@@ -265,6 +265,13 @@ const Right = () => {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       };
       pcRef.current = new RTCPeerConnection(configuration);
+       pcRef.current.ontrack = (event) => {
+
+        if (remotevideoref.current) {
+          remotevideoref.current.srcObject = event.streams[0];
+          remotevideoref.current.play().catch(console.error);
+        }
+      };
       await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer)); // or answer
       // Immediately after:
       if (candidateQueue.current.length > 0) {
@@ -280,13 +287,7 @@ const Right = () => {
 
 
       // Remote stream handler
-      pcRef.current.ontrack = (event) => {
-
-        if (remotevideoref.current) {
-          remotevideoref.current.srcObject = event.streams[0];
-          remotevideoref.current.play().catch(console.error);
-        }
-      };
+     
 
       const cameras = await getConnectedDevices("videoinput");
 
