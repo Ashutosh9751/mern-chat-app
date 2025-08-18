@@ -1,6 +1,6 @@
-import express from  'express'
+import express from 'express'
 import { createServer } from 'node:http';
-import  userrouter  from './routes/usermodel.js'
+import userrouter from './routes/usermodel.js'
 import friendrouter from './routes/friends.js'
 import doteenv from 'dotenv'
 import mongoose from 'mongoose';
@@ -16,13 +16,13 @@ const app = express();
 const server = createServer(app);
 
 app.use(cors({
-    origin:["http://localhost:5173",
-      "https://mern-chat-7jpx31ln8-ashutosh9751s-projects.vercel.app",
-      "https://mern-chat-app-ashy-eight.vercel.app",
-      "https://mern-chat-app-git-main-ashutosh9751s-projects.vercel.app"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
+  origin: ["http://localhost:5173",
+    "https://mern-chat-7jpx31ln8-ashutosh9751s-projects.vercel.app",
+    "https://mern-chat-app-ashy-eight.vercel.app",
+    "https://mern-chat-app-git-main-ashutosh9751s-projects.vercel.app"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
 }));
 doteenv.config();
 
@@ -30,113 +30,113 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use('/api', userrouter);
-app.use('/api',friendrouter)
-app.use('/api',messagerouter)
-app.use('/api',passwordrouter)
+app.use('/api', friendrouter)
+app.use('/api', messagerouter)
+app.use('/api', passwordrouter)
 app.get('/', (req, res) => {
-    res.send('Hello, World!');
+  res.send('Hello, World!');
 })
-const dbconnect=async()=>{
-await mongoose.connect(process.env.mongodb_url);
-console.log('Database connected successfully');
+const dbconnect = async () => {
+  await mongoose.connect(process.env.mongodb_url);
+  console.log('Database connected successfully');
 }
 // Socket.io setup
 const io = new Server(server,
-    cors({
-     origin:["http://localhost:5173",
+  cors({
+    origin: ["http://localhost:5173",
       "https://mern-chat-7jpx31ln8-ashutosh9751s-projects.vercel.app",
       "https://mern-chat-app-ashy-eight.vercel.app",
       "https://mern-chat-app-git-main-ashutosh9751s-projects.vercel.app"
     ],
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true
-    })
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+  })
 );
-let usersocketmap={};
-const getonlineuser=()=> Object.keys(usersocketmap);
+let usersocketmap = {};
+const getonlineuser = () => Object.keys(usersocketmap);
 io.on('connection', (socket) => {
   const logineduser = socket.handshake.query.logineduser;
-
   usersocketmap[logineduser] = socket.id;
 
-socket.on("call-user", async ({ offer, to }) => {
-  console.log(offer,to);
-  const targetSocketId = usersocketmap[to]; // `to` is userId
-  if (targetSocketId) {
-    io.to(targetSocketId).emit("call-made", { offer, from: logineduser });
-  }
-});
-socket.on("ice-candidate", ({ to, candidate }) => {
-  console.log(candidate,to);
-  const targetSocketId = usersocketmap[to];
-  if (targetSocketId) {
-    io.to(targetSocketId).emit("ice-candidate", { candidate, from: logineduser });
-  }
-});
+  socket.on("call-user", async ({ offer, to }) => {
 
- socket.on("make-answer", ({ answer, to }) => {
-  // "to" here should be the caller's userId
-  const targetSocketId = usersocketmap[to];
-  if (targetSocketId) {
-    io.to(targetSocketId).emit("answer-made", {
-      answer,
-      from: logineduser // callee's userId
-    });
-  }
-});
+    const targetSocketId = usersocketmap[to]; // `to` is userId
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("call-made", { offer, from: logineduser });
+    }
+  });
+  socket.on("send-ice-candidate", ({ to, candidate }) => {
 
+    const targetSocketId = usersocketmap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("received-ice-candidate", { candidate, from: logineduser });
+    }
+  });
 
+  socket.on("make-answer", ({ answer, to }) => {
+    // "to" here should be the caller's userId
 
+    const targetSocketId = usersocketmap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("answer-made", {
+        answer,
+        from: logineduser // callee's userId
+      });
+    }
+  });
 
 
- io.emit('online_users',getonlineuser());
+
+
+
+  io.emit('online_users', getonlineuser());
 
   // Handle send_message event
- socket.on('send_message', async ({ senderid, sendername, receiverid, message }) => {
-  try {
-    // Save the message
-    const newMessage = await Messagemodel.create({
-      sender: senderid,
-      receiver: receiverid,
-      message: message
-    });
+  socket.on('send_message', async ({ senderid, sendername, receiverid, message }) => {
+    try {
+      // Save the message
+      const newMessage = await Messagemodel.create({
+        sender: senderid,
+        receiver: receiverid,
+        message: message
+      });
 
-    // Find custom name from receiver's friends list
-    const friendDoc = await friendsmodel.findOne(
-      { userId: senderid, "friends.user": receiverid },
-      { "friends.$": 1 }
-    );
+      // Find custom name from receiver's friends list
+      const friendDoc = await friendsmodel.findOne(
+        { userId: senderid, "friends.user": receiverid },
+        { "friends.$": 1 }
+      );
 
-    let customName = null;
-    if (friendDoc && friendDoc.friends.length > 0) {
-      customName = friendDoc.friends[0].customname || null;
+      let customName = null;
+      if (friendDoc && friendDoc.friends.length > 0) {
+        customName = friendDoc.friends[0].customname || null;
+      }
+
+      // Emit to receiver if online
+      const receiverSocketId = usersocketmap[receiverid];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('receive_message', newMessage, customName || sendername);
+      }
+
+      // Acknowledge sender
+      socket.emit('message_sent_ack', newMessage);
+
+    } catch (error) {
+      console.error('Error in send_message:', error);
     }
-
-    // Emit to receiver if online
-    const receiverSocketId = usersocketmap[receiverid];
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('receive_message', newMessage, customName || sendername);
-    }
-
-    // Acknowledge sender
-    socket.emit('message_sent_ack', newMessage);
-
-  } catch (error) {
-    console.error('Error in send_message:', error);
-  }
-});
+  });
 
 
   socket.on('disconnect', () => {
 
     delete usersocketmap[logineduser];
     //notify all again after someone leaves
-    io.emit('online_users',getonlineuser());
+    io.emit('online_users', getonlineuser());
   });
 });
 
-const port=process.env.port || 3000;
+const port = process.env.port || 3000;
 server.listen(port, () => {
-    dbconnect();
-    console.log(`Server is running on port ${port}`);
+  dbconnect();
+  console.log(`Server is running on port ${port}`);
 });

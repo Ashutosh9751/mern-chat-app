@@ -21,10 +21,11 @@ const Right = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-const [videoStream, setVideoStream] = useState(null);
-const videosrcref = useRef(null);
+  const localvideoref = useRef(null);
+  const remotevideoref = useRef(null)
+  const candidateQueue = useRef([]);
   const [isvideoscreen, setisvideoscreen] = useState(false);
-const pcRef=useRef(null)
+  const pcRef = useRef(null)
   const [ismobile, setismobile] = useState(window.innerWidth < 768);
   const dispatch = useDispatch();
   const [message, setMessage] = useState('');
@@ -32,7 +33,7 @@ const pcRef=useRef(null)
 
   const logineduser = useSelector((state) => state.user?.userInfo);
   const selectedUser = useSelector((state) => state.user?.selectedUser);
-const remoteVideoRef = useRef();
+
   const url = import.meta.env.VITE_API_URL;
 
   function playNotificationSound() {
@@ -179,168 +180,214 @@ const remoteVideoRef = useRef();
     window.addEventListener('resize', handlesize);
     return () => window.removeEventListener('resize', handlesize);
   }, []);
-useEffect(() => {
-  if (isvideoscreen && videosrcref.current && videoStream) {
-    videosrcref.current.srcObject = videoStream;
+
+  //for video call
+
+
+
+  async function getConnectedDevices(type) {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+
+    return devices.filter(device => device.kind === type)
   }
-}, [isvideoscreen, videoStream]);
-const createPeerConnection = () => {
-  const pc = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-  });
+  async function openCamera(cameraId) {
+    const constraints = {
+      'audio': { 'echoCancellation': true },
+      'video': {
+        'deviceId': cameraId,
 
-  pc.ontrack = (event) => {
-    const [remoteStream] = event.streams;
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = remoteStream;
+      }
     }
-  };
 
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit("ice-candidate", {
-        candidate: event.candidate,
-        to: selectedUser.user._id
+    return await navigator.mediaDevices.getUserMedia(constraints);
+  }
+  const handleVideoCall = async () => {
+    setisvideoscreen(true);
+    const configuration = {
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    };
+    pcRef.current = new RTCPeerConnection(configuration);
+
+    // Remote stream handler
+    pcRef.current.ontrack = (event) => {
+
+      if (remotevideoref.current) {
+        remotevideoref.current.srcObject = event.streams[0];
+        remotevideoref.current.play().catch(err => console.error("Play error:", err));
+      }
+    };
+
+    const cameras = await getConnectedDevices("videoinput");
+
+    if (cameras && cameras.length > 0) {
+      const stream = await openCamera(cameras[0].deviceId);
+
+      if (localvideoref.current) {
+        localvideoref.current.srcObject = stream;
+      }
+      stream.getTracks().forEach((track) => {
+
+        pcRef.current.addTrack(track, stream);
       });
+
+
+
+
+
+      const offer = await pcRef.current.createOffer();
+
+      await pcRef.current.setLocalDescription(offer);
+
+      socket.emit("call-user", {
+        offer,
+        to: selectedUser.user._id,
+      });
+
+      pcRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit("send-ice-candidate", {
+            candidate: event.candidate,
+            to: selectedUser.user._id,
+          });
+        }
+      };
     }
   };
-   socket.on("ice-candidate", async ({ candidate }) => {
-      try {
-        await pc.addIceCandidate(candidate);
-      } catch (e) {
-        console.error(e);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // Incoming call
+    socket.on("call-made", async ({ offer, from }) => {
+
+      setisvideoscreen(true);
+      const configuration = {
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      };
+      pcRef.current = new RTCPeerConnection(configuration);
+      await pcRef.current.setRemoteDescription(
+        new RTCSessionDescription(offer)
+      );
+      // Remote stream handler
+      pcRef.current.ontrack = (event) => {
+
+        if (remotevideoref.current) {
+          remotevideoref.current.srcObject = event.streams[0];
+        }
+      };
+
+      const cameras = await getConnectedDevices("videoinput");
+
+      if (cameras && cameras.length > 0) {
+        const stream = await openCamera(cameras[0].deviceId);
+
+        stream.getTracks().forEach((track) => {
+          pcRef.current.addTrack(track, stream);
+        });
+      }
+      if (localvideoref.current) {
+        localvideoref.current.srcObject = stream;
+      }
+
+
+
+
+
+      const answer = await pcRef.current.createAnswer();
+      await pcRef.current.setLocalDescription(answer);
+
+      pcRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit("send-ice-candidate", {
+            candidate: event.candidate,
+            to: from,
+          });
+        }
+      };
+
+      socket.emit("make-answer", {
+        answer,
+        to: from,
+      });
+
+
+    });
+
+    // Receiving an answer
+    socket.on("answer-made", async ({ answer }) => {
+
+      if (answer && pcRef.current) {
+        try {
+          await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        } catch (err) {
+          console.error("Error setting remote description:", err);
+        }
+        ;
       }
     });
 
-  return pc;
-};
+    // Receiving ICE candidate
 
-useEffect(() => {
-  if(!socket){
-    return ;
-  }
 
-    
-    socket.on("call-made", async ({ offer, from }) => {
- pcRef.current=createPeerConnection();
-      const stream = await navigator.mediaDevices.getUserMedia({video:true,audio: true });
 
-      setisvideoscreen(true)
-    setVideoStream(stream);
-     if (videosrcref.current) {
-      videosrcref.current.srcObject = stream;
-    }
-    stream.getTracks().forEach(track => pcRef.current.addTrack(track, stream));
-    await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
-
-    const answer = await pcRef.current.createAnswer();
-    await pcRef.current.setLocalDescription(answer);
-    socket.emit("make-answer", { answer, to: from });
-    setisvideoscreen(true);
-  });
-//hii
-  // Listen for incoming answer
-  socket.on("answer-made", async ({ answer, from }) => {
-    console.log(from,answer)
-    await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-  });
-
-  return () => {
- socket.off("call-made");
-      socket.off("answer-made");
-      socket.off("ice-candidate");
-      socket.off("call-ended");
-  };
-
-}, [socket])
-  const cleanupCall = () => {
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-      setVideoStream(null);
-    }
+    return () => {
+      socket.off("call-made");
+      socket.off("make-answer");
+      socket.off("received-ice-candidate");
+    };
+  }, []);
+  socket.on("received-ice-candidate", async ({ candidate }) => {
     if (pcRef.current) {
-      pcRef.current.close();
-      pcRef.current = null;
-    }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
-   if (videosrcref.current) {
-    videosrcref.current.srcObject = null;
-  }
-    setisvideoscreen(false);
-  };
-const handleVideoCall = async () => {
-  pcRef.current=createPeerConnection();
-  const cameras = await getConnectedDevices('videoinput');
-  if (cameras && cameras.length > 0) {
-    const stream = await openCamera(cameras[0].deviceId);
-    setVideoStream(stream); // store MediaStream in state
-    setisvideoscreen(true); // trigger video element render
-   if (videosrcref.current) {
-      videosrcref.current.srcObject = stream;
-    }
-    stream.getTracks().forEach(track => {
-      pcRef.current.addTrack(track, stream);
-    });
-      const offer = await pcRef.current.createOffer();
-    await pcRef.current.setLocalDescription(offer);
-    socket.emit("call-user", { offer, to:selectedUser.user._id });
-  }
-};
-async function getConnectedDevices(type) {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    return devices.filter(device => device.kind === type)
-}
-async function openCamera(cameraId) {
-    const constraints = {
-        'audio': {'echoCancellation': true},
-        'video': {
-            'deviceId': cameraId,
-          
-            }
+      if (pcRef.current.remoteDescription) {
+        try {
+          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+
+        } catch (err) {
+          console.error("❌ Error adding ICE candidate", err);
         }
+      } else {
+        console.warn("⚠️ Queued ICE candidate (no remoteDescription yet)");
+        candidateQueue.current.push(candidate);
+      }
+    }
+  });
+  useEffect(() => {
+    if (pcRef.current?.remoteDescription && candidateQueue.current.length > 0) {
+      candidateQueue.current.forEach(async (c) => {
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(c));
+      });
+      candidateQueue.current = [];
+    }
+  }, [pcRef.current?.remoteDescription]);
 
-    return await navigator.mediaDevices.getUserMedia(constraints);
-}
- 
+  if (isvideoscreen) {
+    return (
+      <div className="w-screen h-screen bg-black flex flex-col items-center justify-center">
+        <video
+          ref={remotevideoref}
+          autoPlay
+          playsInline
+          controls={false}
+          style={{ width: "400px", height: "300px", background: "black" }}
+        />
+
+        <video
+          ref={localvideoref}
+
+          autoPlay
+          playsInline
+          muted
+          className="w-1/4 h-1/4 absolute bottom-4 right-4 border-2 border-white rounded-lg"
+        />
+      </div>
+    );
+  }
 
 
- if(isvideoscreen) {
-  return (
-     <div className="w-screen h-screen bg-black relative flex justify-center items-center">
-    
-    {/* Remote video fills entire screen */}
-    <video
-      ref={remoteVideoRef}
-      autoPlay
-      playsInline
-      controls={false}
-      className="w-full h-full object-cover"
-    />
 
-    {/* Local video as picture-in-picture */}
-    <video
-      ref={videosrcref}
-      autoPlay
-      playsInline
-      muted
-      controls={false}
-      className="w-1/4 h-1/4 object-cover rounded-lg absolute bottom-4 right-4 shadow-lg border-2 border-white"
-    />
 
-    {/* End Call button */}
-    <button
-      onClick={cleanupCall}
-      className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition"
-    >
-      End Call
-    </button>
-  </div>
-  );
-}
 
- else if ((!ismobile && ChatScreen && !isvideoscreen) || (ismobile && ChatScreen && !isvideoscreen)) {
+  else if ((!ismobile && ChatScreen && !isvideoscreen) || (ismobile && ChatScreen && !isvideoscreen)) {
     return (
       <div
         className={`${!ismobile ? 'md:w-6/10' : 'w-screen'} h-screen overflow-hidden flex flex-col justify-between items-center`}
@@ -362,14 +409,14 @@ async function openCamera(cameraId) {
                 <h2 className='text-lg font-bold text-white'>{selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname}</h2>
               </div>
             </div>
-      
+
             <div className='flex items-center justify-center h-full pr-4 gap-x-5'>
               <div className='cursor-pointer  rounded-full bg-green-400 hover:bg-green-500 transition duration-200'>
-              <IoMdCall className='text-white text-4xl'/>
+                <IoMdCall className='text-white text-4xl' />
 
               </div>
               <div className='cursor-pointer  rounded-full bg-green-400 hover:bg-green-500 transition duration-200'>
-              <MdOutlineVideoCall className='text-white text-4xl ml-2' onClick={handleVideoCall}/>
+                <MdOutlineVideoCall className='text-white text-4xl ml-2' onClick={handleVideoCall} />
 
               </div>
             </div>
@@ -436,4 +483,3 @@ async function openCamera(cameraId) {
 };
 
 export default Right;
-
