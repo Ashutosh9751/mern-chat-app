@@ -201,6 +201,7 @@ const Right = () => {
 
     return await navigator.mediaDevices.getUserMedia(constraints);
   }
+  
   const handleVideoCall = async () => {
     setisvideoscreen(true);
     const configuration = {
