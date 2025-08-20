@@ -84,7 +84,14 @@ io.on('connection', (socket) => {
       });
     }
   });
-
+socket.on('reject-call',({to})=>{
+   const targetSocketId = usersocketmap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("call-rejected", {
+       from:logineduser
+      });
+    }
+})
 
 
 
