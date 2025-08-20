@@ -25,6 +25,10 @@ const Right = () => {
   const remotevideoref = useRef(null)
   const candidateQueue = useRef([]);
   const [isvideoscreen, setisvideoscreen] = useState(false);
+  const [incomingCall, setIncomingCall] = useState(null); // { from, offer }
+  const [isRinging, setIsRinging] = useState(false);
+  const ringtoneRef = useRef(null);
+
   const pcRef = useRef(null)
   const [ismobile, setismobile] = useState(window.innerWidth < 768);
   const dispatch = useDispatch();
@@ -201,7 +205,7 @@ const Right = () => {
 
     return await navigator.mediaDevices.getUserMedia(constraints);
   }
-  
+
   const handleVideoCall = async () => {
     setisvideoscreen(true);
     const configuration = {
@@ -254,81 +258,31 @@ const Right = () => {
       };
     }
   };
+useEffect(() => {
+  if (incomingCall) {
+    console.log("📥 New incoming call state:", incomingCall);
+  }
+}, [incomingCall]);
+
+
 
   useEffect(() => {
+
     if (!socket) return;
 
-    // Incoming call
-    socket.on("call-made", async ({ offer, from }) => {
+    const handleCallMade = async ({ offer, from }) => {
+      console.log(offer, from);
+      setIncomingCall({ from, offer });
+      
+      setIsRinging(true);
 
-      setisvideoscreen(true);
-      const configuration = {
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      };
-      pcRef.current = new RTCPeerConnection(configuration);
-       pcRef.current.ontrack = (event) => {
-
-        if (remotevideoref.current) {
-          remotevideoref.current.srcObject = event.streams[0];
-          remotevideoref.current.play().catch(console.error);
-        }
-      };
-      await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer)); // or answer
-      // Immediately after:
-      if (candidateQueue.current.length > 0) {
-        for (const candidate of candidateQueue.current) {
-          try {
-            await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-          } catch (e) {
-            console.error("❌ Error adding queued ICE candidate:", e);
-          }
-        }
-        candidateQueue.current = [];
-      }
-
-
-      // Remote stream handler
-     
-
-      const cameras = await getConnectedDevices("videoinput");
-
-      if (cameras && cameras.length > 0) {
-        const stream = await openCamera(cameras[0].deviceId);
-
-        stream.getTracks().forEach((track) => {
-          pcRef.current.addTrack(track, stream);
-        });
-
-        if (localvideoref.current) {
-          localvideoref.current.srcObject = stream;
-        }
-
-
-
-
-
-        const answer = await pcRef.current.createAnswer();
-        await pcRef.current.setLocalDescription(answer);
-
-        pcRef.current.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit("send-ice-candidate", {
-              candidate: event.candidate,
-              to: from,
-            });
-          }
-        };
-
-        socket.emit("make-answer", {
-          answer,
-          to: from,
-        });
-
-      }
-    });
-
-    // Receiving an answer
-    socket.on("answer-made", async ({ answer }) => {
+      // Play ringtone
+      ringtoneRef.current = new Audio("/sounds/ringtone.mp3");
+      ringtoneRef.current.loop = true;
+      ringtoneRef.current.play().catch(console.error);
+    };
+    const handleAnswerMade = async ({ answer }) => {
+      console.log(answer);
       if (answer && pcRef.current) {
         try {
           await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
@@ -347,11 +301,8 @@ const Right = () => {
           console.error("Error setting remote description:", err);
         }
       }
-    });
-
-
-    // Receiving ICE candidate
-    socket.on("received-ice-candidate", async ({ candidate }) => {
+    };
+    const handleIceCandidate = async ({ candidate }) => {
       if (pcRef.current) {
         if (pcRef.current.remoteDescription) {
           try {
@@ -365,26 +316,122 @@ const Right = () => {
           candidateQueue.current.push(candidate);
         }
       }
-    });
 
+     
+    }
 
-    return () => {
-      socket.off("call-made");
-      socket.off("make-answer");
-      socket.off("received-ice-candidate");
+    socket.on("call-made", handleCallMade);
+    socket.on("answer-made", handleAnswerMade);
+    socket.on("received-ice-candidate", handleIceCandidate);
+
+    // return () => {
+    //   socket.off("call-made", handleCallMade);
+    //   socket.off("answer-made", handleAnswerMade);
+    //   socket.off("received-ice-candidate", handleIceCandidate);
+    // };
+  }, [socket])
+  const handleAcceptCall = async () => {
+    console.log(incomingCall);
+    if (!incomingCall) return;
+    setIsRinging(false);
+    ringtoneRef.current?.pause();
+    setisvideoscreen(true);
+    const configuration = {
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     };
-  }, []);
 
-  // useEffect(() => {
-  //   if (pcRef.current?.remoteDescription && candidateQueue.current.length > 0) {
-  //     candidateQueue.current.forEach(async (c) => {
-  //       await pcRef.current.addIceCandidate(new RTCIceCandidate(c));
-  //     });
-  //     candidateQueue.current = [];
-  //   }
-  // }, [pcRef.current?.remoteDescription]);
+    pcRef.current = new RTCPeerConnection(configuration);
+    pcRef.current.ontrack = (event) => {
 
-  if (isvideoscreen) {
+      if (remotevideoref.current) {
+        remotevideoref.current.srcObject = event.streams[0];
+        remotevideoref.current.play().catch(console.error);
+      }
+    };
+    console.log(incomingCall.offer);
+    await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCall.offer)); // or answer
+    // Immediately after:
+    if (candidateQueue.current.length > 0) {
+      for (const candidate of candidateQueue.current) {
+        try {
+          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error("❌ Error adding queued ICE candidate:", e);
+        }
+      }
+      candidateQueue.current = [];
+    }
+
+
+    // loacl video stream handler
+
+
+    const cameras = await getConnectedDevices("videoinput");
+
+    if (cameras && cameras.length > 0) {
+      const stream = await openCamera(cameras[0].deviceId);
+
+      stream.getTracks().forEach((track) => {
+        pcRef.current.addTrack(track, stream);
+      });
+
+      if (localvideoref.current) {
+        localvideoref.current.srcObject = stream;
+      }
+      const answer = await pcRef.current.createAnswer();
+      await pcRef.current.setLocalDescription(answer);
+console.log(answer);
+      pcRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit("send-ice-candidate", {
+            candidate: event.candidate,
+            to: incomingCall.from,
+          });
+        }
+      };
+      socket.emit("make-answer", {
+        answer,
+        to: incomingCall.from,
+      });
+    }
+  }
+  const handleRejectCall = () => {
+    if (!incomingCall) return; 
+    ringtoneRef.current?.pause();
+    setIsRinging(false);
+
+    socket.emit("reject-call", { to: incomingCall.from });
+    setIncomingCall(null);
+  };
+
+
+
+  if (isRinging) {
+    return (
+
+
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-50">
+        <h2 className="text-white text-2xl mb-4">Incoming Video Call</h2>
+        <div className="flex gap-6">
+          <button
+            className="bg-green-500 text-white px-6 py-3 rounded-full"
+            onClick={handleAcceptCall}
+          >
+            Accept
+          </button>
+          <button
+            className="bg-red-500 text-white px-6 py-3 rounded-full"
+            onClick={handleRejectCall}
+          >
+            Reject
+          </button>
+        </div>
+      </div>
+
+
+    )
+  }
+ if (isvideoscreen) {
     return (
       <div className="w-screen h-screen bg-black flex flex-col items-center justify-center">
         <video
@@ -406,10 +453,6 @@ const Right = () => {
       </div>
     );
   }
-
-
-
-
 
   else if ((!ismobile && ChatScreen && !isvideoscreen) || (ismobile && ChatScreen && !isvideoscreen)) {
     return (
