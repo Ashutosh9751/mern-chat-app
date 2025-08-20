@@ -319,16 +319,23 @@ useEffect(() => {
 
      
     }
-
+const handleCallRejected = () => {
+    alert("Call has been rejected");
+    setIncomingCall(null);
+    setIsRinging(false);
+    ringtoneRef.current?.pause();
+    dispatch(onChatScreen(true));
+  };
     socket.on("call-made", handleCallMade);
     socket.on("answer-made", handleAnswerMade);
     socket.on("received-ice-candidate", handleIceCandidate);
-
-    // return () => {
-    //   socket.off("call-made", handleCallMade);
-    //   socket.off("answer-made", handleAnswerMade);
-    //   socket.off("received-ice-candidate", handleIceCandidate);
-    // };
+    socket.on("call-rejected", handleCallRejected);
+    return () => {
+      socket.off("call-made", handleCallMade);
+      socket.off("answer-made", handleAnswerMade);
+      socket.off("received-ice-candidate", handleIceCandidate);
+      socket.off("call-rejected", handleCallRejected);
+    };
   }, [socket])
   const handleAcceptCall = async () => {
     console.log(incomingCall);
@@ -403,7 +410,32 @@ console.log(answer);
     socket.emit("reject-call", { to: incomingCall.from });
     setIncomingCall(null);
   };
+const handleEndCall = () => {
+  if (pcRef.current) {
+    pcRef.current.close();
+    pcRef.current = null;
+  }
 
+  // Stop local video/audio tracks
+  if (localvideoref.current?.srcObject) {
+    const tracks = localvideoref.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop()); // stop camera + mic
+    localvideoref.current.srcObject = null;
+  }
+
+  // Clear remote video stream
+  if (remotevideoref.current?.srcObject) {
+    const tracks = remotevideoref.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    remotevideoref.current.srcObject = null;
+  }
+
+  setisvideoscreen(false);
+  setIncomingCall(null);
+  setIsRinging(false);
+  ringtoneRef.current?.pause();
+  dispatch(onChatScreen(true));
+};
 
 
   if (isRinging) {
@@ -450,6 +482,11 @@ console.log(answer);
           muted
           className="w-1/4 h-1/4 absolute bottom-4 right-4 border-2 border-white rounded-lg"
         />
+        <div>
+          <button onClick={handleEndCall} className='absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded'>
+            end call
+          </button>
+        </div>
       </div>
     );
   }
