@@ -10,7 +10,8 @@ const userslice = createSlice({
         onlineuser: [],
         currentChatUserId: null,
         unreadMessages: {},
-        friends: []
+        friends: [],
+        isringing: false
     },
     reducers: {
         login: (state, action) => {
@@ -56,10 +57,13 @@ const userslice = createSlice({
         },
         setfriends: (state, action) => {
             state.friends = action.payload;
-        }
+        },
+        setIsRinging: (state, action) => {
+            state.isringing = action.payload;
+        },
 
     }
     })
 
-export const { login, logout, selectUser, onChatScreen, setonlineuser, setCurrentChatUserId, incrementUnread, clearUnread, setfriends } = userslice.actions;
+export const { login, logout, selectUser, onChatScreen, setonlineuser, setCurrentChatUserId, incrementUnread, clearUnread, setfriends, setIsRinging } = userslice.actions;
 export default userslice.reducer;

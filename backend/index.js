@@ -58,11 +58,11 @@ io.on('connection', (socket) => {
   const logineduser = socket.handshake.query.logineduser;
   usersocketmap[logineduser] = socket.id;
 
-  socket.on("call-user", async ({ offer, to }) => {
+  socket.on("call-user", async ({ offer, to, selectedusername }) => {
 
     const targetSocketId = usersocketmap[to]; // `to` is userId
     if (targetSocketId) {
-      io.to(targetSocketId).emit("call-made", { offer, from: logineduser });
+      io.to(targetSocketId).emit("call-made", { offer, from: logineduser, selectedusername });
     }
   });
   socket.on("send-ice-candidate", ({ to, candidate }) => {
@@ -100,38 +100,38 @@ socket.on('reject-call',({to})=>{
 
   // Handle send_message event
   socket.on('send_message', async ({ senderid, sendername, receiverid, message }) => {
-    try {
-      // Save the message
-      const newMessage = await Messagemodel.create({
-        sender: senderid,
-        receiver: receiverid,
-        message: message
-      });
+  try {
+    const newMessage = await Messagemodel.create({
+      sender: senderid,
+      receiver: receiverid,
+      message: message
+    });
 
-      // Find custom name from receiver's friends list
-      const friendDoc = await friendsmodel.findOne(
-        { userId: senderid, "friends.user": receiverid },
-        { "friends.$": 1 }
-      );
+    // Find custom name from receiver's friends list for the sender
+    const friendDoc = await friendsmodel.findOne(
+      { userId: receiverid, "friends.user": senderid },
+      { "friends.$": 1 }
+    );
 
-      let customName = null;
-      if (friendDoc && friendDoc.friends.length > 0) {
-        customName = friendDoc.friends[0].customname || null;
-      }
-
-      // Emit to receiver if online
-      const receiverSocketId = usersocketmap[receiverid];
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit('receive_message', newMessage, customName || sendername);
-      }
-
-      // Acknowledge sender
-      socket.emit('message_sent_ack', newMessage);
-
-    } catch (error) {
-      console.error('Error in send_message:', error);
+    let customName = null;
+    if (friendDoc && friendDoc.friends.length > 0) {
+      customName = friendDoc.friends[0].customname || null;
     }
-  });
+
+    // Emit to receiver if online
+    const receiverSocketId = usersocketmap[receiverid];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('receive_message', newMessage, customName || sendername);
+    }
+
+    // Acknowledge sender
+    socket.emit('message_sent_ack', newMessage);
+
+  } catch (error) {
+    console.error('Error in send_message:', error);
+  }
+});
+
 
 
   socket.on('disconnect', () => {

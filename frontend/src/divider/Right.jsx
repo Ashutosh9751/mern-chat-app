@@ -9,7 +9,7 @@ import { IoMdCall } from "react-icons/io";
 import { MdOutlineVideoCall } from "react-icons/md";
 import axios from 'axios';
 import socketcontext from '../context/contextstate';
-import { setonlineuser } from '../redux/userslice';
+import { setonlineuser,setIsRinging } from '../redux/userslice';
 import { incrementUnread } from '../redux/userslice';
 import { toast } from 'react-toastify';
 
@@ -26,7 +26,9 @@ const Right = () => {
   const candidateQueue = useRef([]);
   const [isvideoscreen, setisvideoscreen] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null); // { from, offer }
-  const [isRinging, setIsRinging] = useState(false);
+  // const [isRinging, setIsRinging] = useState(false);
+  const isringing=useSelector((state) => state.user?. isringing);
+
   const ringtoneRef = useRef(null);
 
   const pcRef = useRef(null)
@@ -79,7 +81,7 @@ const Right = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const listener = (newMessage, sendername) => {
+    const listener = (newMessage, customname) => {
       const isChatScreen = chatScreenRef.current;
       const selectedId = selectedUser?.user?._id;
       const isCurrentChat = ((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
@@ -91,12 +93,12 @@ const Right = () => {
 
       } else if (!isChatScreen) {
 
-        toast.success(`New message from ${sendername || "someone"}`);
+        toast.success(`New message from ${customname || "someone"}`);
         playNotificationSound();
         dispatch(incrementUnread(newMessage.sender));
       }
       else if (!isCurrentChat) {
-        toast.success(`New message from ${sendername || "someone"}`);
+        toast.success(`New message from ${customname || "someone"}`);
         playNotificationSound();
         dispatch(incrementUnread(newMessage.sender));
       }
@@ -246,6 +248,7 @@ const Right = () => {
       socket.emit("call-user", {
         offer,
         to: selectedUser.user._id,
+        selectedusername: selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname
       });
 
       pcRef.current.onicecandidate = (event) => {
@@ -258,11 +261,7 @@ const Right = () => {
       };
     }
   };
-useEffect(() => {
-  if (incomingCall) {
-    console.log("📥 New incoming call state:", incomingCall);
-  }
-}, [incomingCall]);
+
 
 
 
@@ -270,12 +269,12 @@ useEffect(() => {
 
     if (!socket) return;
 
-    const handleCallMade = async ({ offer, from }) => {
+    const handleCallMade = async ({ offer, from, selectedusername }) => {
       console.log(offer, from);
-      setIncomingCall({ from, offer });
+      setIncomingCall({ from, offer, selectedusername });
       
-      setIsRinging(true);
-
+      // setIsRinging(true);
+dispatch(setIsRinging(true));
       // Play ringtone
       ringtoneRef.current = new Audio("/sounds/ringtone.mp3");
       ringtoneRef.current.loop = true;
@@ -320,9 +319,10 @@ useEffect(() => {
      
     }
 const handleCallRejected = () => {
-    alert("Call has been rejected");
+    toast.error(`call rejected by ${selectedUser.customname}`);
     setIncomingCall(null);
-    setIsRinging(false);
+    // setIsRinging(false);
+    dispatch(setIsRinging(false));
     ringtoneRef.current?.pause();
     dispatch(onChatScreen(true));
   };
@@ -340,7 +340,8 @@ const handleCallRejected = () => {
   const handleAcceptCall = async () => {
     console.log(incomingCall);
     if (!incomingCall) return;
-    setIsRinging(false);
+    // setIsRinging(false);
+    dispatch(setIsRinging(false));
     ringtoneRef.current?.pause();
     setisvideoscreen(true);
     const configuration = {
@@ -405,7 +406,8 @@ console.log(answer);
   const handleRejectCall = () => {
     if (!incomingCall) return; 
     ringtoneRef.current?.pause();
-    setIsRinging(false);
+    // setIsRinging(false);
+    dispatch(setIsRinging(false));
 
     socket.emit("reject-call", { to: incomingCall.from });
     setIncomingCall(null);
@@ -432,18 +434,19 @@ const handleEndCall = () => {
 
   setisvideoscreen(false);
   setIncomingCall(null);
-  setIsRinging(false);
+  // setIsRinging(false);
+  dispatch(setIsRinging(false));
   ringtoneRef.current?.pause();
   dispatch(onChatScreen(true));
 };
 
 
-  if (isRinging) {
+  if (isringing) {
     return (
 
 
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-50">
-        <h2 className="text-white text-2xl mb-4">Incoming Video Call</h2>
+        <h2 className="text-white text-2xl mb-4">Incoming Video Call from {incomingCall?.selectedusername}</h2>
         <div className="flex gap-6">
           <button
             className="bg-green-500 text-white px-6 py-3 rounded-full"
