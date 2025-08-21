@@ -25,6 +25,10 @@ const Right = () => {
   const remotevideoref = useRef(null)
   const candidateQueue = useRef([]);
   const [isvideoscreen, setisvideoscreen] = useState(false);
+  const [isaudioscreen, setisaudioscreen] = useState(false);
+  
+  const remoteAudioRef = useRef(null);
+
   const [incomingCall, setIncomingCall] = useState(null); // { from, offer }
   // const [isRinging, setIsRinging] = useState(false);
   const isringing=useSelector((state) => state.user?. isringing);
@@ -248,7 +252,8 @@ const Right = () => {
       socket.emit("call-user", {
         offer,
         to: selectedUser.user._id,
-        selectedusername: selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname
+        selectedusername: selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname,
+        calltype: "video"
       });
 
       pcRef.current.onicecandidate = (event) => {
@@ -261,7 +266,50 @@ const Right = () => {
       };
     }
   };
+const handleaudiocall = async () => {
+  setisaudioscreen(true);
+  setisvideoscreen(false);
+  const configuration = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  };
+  pcRef.current = new RTCPeerConnection(configuration);
 
+  pcRef.current.ontrack = (event) => {
+    // You can play audio using an <audio ref> element
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = event.streams[0];
+      remoteAudioRef.current.play().catch(console.error);
+    }
+  };
+
+  // Get only audio input
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+  stream.getTracks().forEach((track) => {
+    pcRef.current.addTrack(track, stream);
+  });
+    const offer = await pcRef.current.createOffer();
+
+      await pcRef.current.setLocalDescription(offer);
+
+      socket.emit("call-user", {
+        offer,
+        to: selectedUser.user._id,
+        selectedusername: selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname,
+        calltype: "audio"
+      });
+
+      pcRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit("send-ice-candidate", {
+            candidate: event.candidate,
+            to: selectedUser.user._id,
+          });
+        }
+      };
+
+  // The rest of your signaling logic—createOffer, setLocalDescription, socket.emit, etc.—remains unchanged
+};
 
 
 
@@ -269,10 +317,10 @@ const Right = () => {
 
     if (!socket) return;
 
-    const handleCallMade = async ({ offer, from, selectedusername }) => {
-      console.log(offer, from);
-      setIncomingCall({ from, offer, selectedusername });
-      
+    const handleCallMade = async ({ offer, from, selectedusername, calltype }) => {
+
+      setIncomingCall({ from, offer, selectedusername, calltype });
+
       // setIsRinging(true);
 dispatch(setIsRinging(true));
       // Play ringtone
@@ -281,7 +329,7 @@ dispatch(setIsRinging(true));
       ringtoneRef.current.play().catch(console.error);
     };
     const handleAnswerMade = async ({ answer }) => {
-      console.log(answer);
+      
       if (answer && pcRef.current) {
         try {
           await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
@@ -326,10 +374,42 @@ const handleCallRejected = () => {
     ringtoneRef.current?.pause();
     dispatch(onChatScreen(true));
   };
+  const handleEndCallbyuser=async () => {
+      if (pcRef.current) {
+    pcRef.current.close();
+    pcRef.current = null;
+  }
+    if (localvideoref.current?.srcObject) {
+    const tracks = localvideoref.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop()); // stop camera + mic
+    localvideoref.current.srcObject = null;
+  }
+  // Clear remote video stream
+  if (remotevideoref.current?.srcObject) {
+    const tracks = remotevideoref.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    remotevideoref.current.srcObject = null;
+  }
+   if (remoteAudioRef.current?.srcObject) {
+    const tracks = remoteAudioRef.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    remoteAudioRef.current.srcObject = null;
+  }
+  setisvideoscreen(false);
+  setisaudioscreen(false);
+  setIncomingCall(null);
+  // setIsRinging(false);
+  dispatch(setIsRinging(false));
+  ringtoneRef.current?.pause();
+   
+  dispatch(onChatScreen(true));
+  }
     socket.on("call-made", handleCallMade);
     socket.on("answer-made", handleAnswerMade);
     socket.on("received-ice-candidate", handleIceCandidate);
     socket.on("call-rejected", handleCallRejected);
+    socket.on('call-ended', handleEndCallbyuser);
+
     return () => {
       socket.off("call-made", handleCallMade);
       socket.off("answer-made", handleAnswerMade);
@@ -337,13 +417,23 @@ const handleCallRejected = () => {
       socket.off("call-rejected", handleCallRejected);
     };
   }, [socket])
+
   const handleAcceptCall = async () => {
-    console.log(incomingCall);
+    
     if (!incomingCall) return;
     // setIsRinging(false);
     dispatch(setIsRinging(false));
     ringtoneRef.current?.pause();
-    setisvideoscreen(true);
+    if(incomingCall.calltype === "audio") {
+      setisvideoscreen(false);
+      setisaudioscreen(true);
+      dispatch(onChatScreen(true));
+    }
+    else if(incomingCall.calltype === "video"){
+      setisvideoscreen(true);
+      setisaudioscreen(false);
+      dispatch(onChatScreen(true));
+    }
     const configuration = {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     };
@@ -356,7 +446,7 @@ const handleCallRejected = () => {
         remotevideoref.current.play().catch(console.error);
       }
     };
-    console.log(incomingCall.offer);
+
     await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCall.offer)); // or answer
     // Immediately after:
     if (candidateQueue.current.length > 0) {
@@ -371,24 +461,32 @@ const handleCallRejected = () => {
     }
 
 
-    // loacl video stream handler
+ 
 
 
-    const cameras = await getConnectedDevices("videoinput");
 
-    if (cameras && cameras.length > 0) {
-      const stream = await openCamera(cameras[0].deviceId);
+
+   // For video: { video: true, audio: true }
+const constraints = incomingCall.calltype === "video"
+  ? { video: true, audio: true }
+  : { video: false, audio: true };
+
+const stream = await navigator.mediaDevices.getUserMedia(constraints);
+// ...rest of stream setup
+
+     
 
       stream.getTracks().forEach((track) => {
         pcRef.current.addTrack(track, stream);
       });
-
-      if (localvideoref.current) {
-        localvideoref.current.srcObject = stream;
-      }
+if(incomingCall.calltype === "video"){
+  if (localvideoref.current) {
+    localvideoref.current.srcObject = stream;
+  }
+}
       const answer = await pcRef.current.createAnswer();
       await pcRef.current.setLocalDescription(answer);
-console.log(answer);
+
       pcRef.current.onicecandidate = (event) => {
         if (event.candidate) {
           socket.emit("send-ice-candidate", {
@@ -401,7 +499,8 @@ console.log(answer);
         answer,
         to: incomingCall.from,
       });
-    }
+ 
+   
   }
   const handleRejectCall = () => {
     if (!incomingCall) return; 
@@ -417,31 +516,35 @@ const handleEndCall = () => {
     pcRef.current.close();
     pcRef.current = null;
   }
-
-  // Stop local video/audio tracks
-  if (localvideoref.current?.srcObject) {
+    if (localvideoref.current?.srcObject) {
     const tracks = localvideoref.current.srcObject.getTracks();
     tracks.forEach(track => track.stop()); // stop camera + mic
     localvideoref.current.srcObject = null;
   }
-
   // Clear remote video stream
   if (remotevideoref.current?.srcObject) {
     const tracks = remotevideoref.current.srcObject.getTracks();
     tracks.forEach(track => track.stop());
     remotevideoref.current.srcObject = null;
   }
-
+   if (remoteAudioRef.current?.srcObject) {
+    const tracks = remoteAudioRef.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    remoteAudioRef.current.srcObject = null;
+  }
   setisvideoscreen(false);
+  setisaudioscreen(false);
   setIncomingCall(null);
   // setIsRinging(false);
   dispatch(setIsRinging(false));
   ringtoneRef.current?.pause();
+    socket.emit('end-call', { to: selectedUser.user._id });
   dispatch(onChatScreen(true));
 };
 
 
   if (isringing) {
+    
     return (
 
 
@@ -466,6 +569,24 @@ const handleEndCall = () => {
 
     )
   }
+  if (isaudioscreen) {
+  return (
+    <div className="w-screen h-screen bg-black flex flex-col items-center justify-center">
+      <audio
+        ref={remoteAudioRef}
+        autoPlay
+        controls={false}
+        style={{ width: "400px", background: "black" }}
+      />
+      <div>
+        <button onClick={handleEndCall} className='absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded'>
+          end call
+        </button>
+      </div>
+    </div>
+  );
+}
+
  if (isvideoscreen) {
     return (
       <div className="w-screen h-screen bg-black flex flex-col items-center justify-center">
@@ -519,7 +640,7 @@ const handleEndCall = () => {
 
             <div className='flex items-center justify-center h-full pr-4 gap-x-5'>
               <div className='cursor-pointer  rounded-full bg-green-400 hover:bg-green-500 transition duration-200'>
-                <IoMdCall className='text-white text-4xl' />
+                <IoMdCall className='text-white text-4xl' onClick={handleaudiocall}/>
 
               </div>
               <div className='cursor-pointer  rounded-full bg-green-400 hover:bg-green-500 transition duration-200'>

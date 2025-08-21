@@ -32,6 +32,7 @@ const Ui = () => {
 
   useEffect(() => {
     setonchat(ChatScreen);
+    
   }, [ChatScreen]);
 
   // ✅ Only show UI if user is logged in

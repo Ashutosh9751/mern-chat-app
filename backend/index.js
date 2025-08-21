@@ -58,11 +58,11 @@ io.on('connection', (socket) => {
   const logineduser = socket.handshake.query.logineduser;
   usersocketmap[logineduser] = socket.id;
 
-  socket.on("call-user", async ({ offer, to, selectedusername }) => {
+  socket.on("call-user", async ({ offer, to, selectedusername, calltype }) => {
 
     const targetSocketId = usersocketmap[to]; // `to` is userId
     if (targetSocketId) {
-      io.to(targetSocketId).emit("call-made", { offer, from: logineduser, selectedusername });
+      io.to(targetSocketId).emit("call-made", { offer, from: logineduser, selectedusername, calltype });
     }
   });
   socket.on("send-ice-candidate", ({ to, candidate }) => {
@@ -92,9 +92,14 @@ socket.on('reject-call',({to})=>{
       });
     }
 })
-
-
-
+socket.on('end-call', ({ to }) => {
+  const targetSocketId = usersocketmap[to];
+  if (targetSocketId) {
+    io.to(targetSocketId).emit("call-ended", {
+      from: logineduser
+    });
+  }
+});
 
   io.emit('online_users', getonlineuser());
 
