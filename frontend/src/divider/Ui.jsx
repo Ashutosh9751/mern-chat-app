@@ -12,7 +12,7 @@ const Ui = () => {
 
   const logininfo = useSelector((state) => state.user?.userInfo);
   const ChatScreen = useSelector((state) => state.user?.isonchatscreen);
-  
+  const isringing = useSelector((state) => state.user?.isringing);
 
   // ❗ Redirect if not logged in
 
@@ -39,37 +39,64 @@ const Ui = () => {
     return null; // or loading screen if preferred
   }
 
-  if (!ismobile) {
-    return (
-      <div className='w-screen h-screen flex'>
-        <Left />
-        <Middle  />
-        <Right />
-      </div>
-    );
-  } else if (ismobile && !onchat) {
-    return (
-      <div className='w-screen h-screen flex'>
-        <Left />
-        <Middle  />
-        <div className='hidden '>
-        <Right/>
+  // if (!ismobile) {
+  //   return (
+  //     <div className='w-screen h-screen flex'>
+  //       <Left />
+  //       <Middle  />
+  //       <Right />
+  //     </div>
+  //   );
+  // } else if (ismobile && !onchat) {
+  //   return (
+  //     <div className='w-screen h-screen flex'>
+  //       <Left />
+  //       <Middle  />
+  //       <div className='hidden '>
+  //       <Right/>
 
-        </div>
-      </div>
-    );
-  } else if (ismobile && onchat) {
-    return (
-      <div className='w-screen h-screen flex'>
-        <div className='hidden '>
-          <Left/>
-          <Middle />
-        </div>
+  //       </div>
+  //     </div>
+  //   );
+  // } else if (ismobile && onchat) {
+  //   return (
+  //     <div className='w-screen h-screen flex'>
+  //       <div className='hidden '>
+  //         <Left/>
+  //         <Middle />
+  //       </div>
         
+  //       <Right />
+  //     </div>
+  //   );
+  // }
+  if (!ismobile) {
+    // Desktop: show all at once (fully visible)
+    return (
+      <div className="w-screen h-screen flex">
+        <Left />
+        <Middle />
         <Right />
       </div>
     );
   }
+
+  // Mobile: always mount all three, but hide/show with styles
+
+  return (
+    <div className="w-screen h-screen flex">
+      {/* Left and Middle shown only when NOT ringing and NOT on chat */}
+      <div style={{ display: !isringing && !onchat ? 'flex' : 'none', flex: 1 }}>
+        <Left />
+        <Middle />
+      </div>
+
+      {/* Right shown when ringing or on chat */}
+      <div style={{ display: isringing || onchat ? 'flex' : 'none', flex: 1 }}>
+        <Right />
+      </div>
+    </div>
+  );
 
   return null;
 };

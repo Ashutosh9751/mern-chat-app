@@ -9,7 +9,7 @@ import { IoMdCall } from "react-icons/io";
 import { MdOutlineVideoCall } from "react-icons/md";
 import axios from 'axios';
 import socketcontext from '../context/contextstate';
-import { setonlineuser } from '../redux/userslice';
+import { setonlineuser,setIsRinging } from '../redux/userslice';
 import { incrementUnread } from '../redux/userslice';
 import { toast } from 'react-toastify';
 
@@ -26,7 +26,9 @@ const Right = () => {
   const candidateQueue = useRef([]);
   const [isvideoscreen, setisvideoscreen] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null); // { from, offer }
-  const [isRinging, setIsRinging] = useState(false);
+  // const [isRinging, setIsRinging] = useState(false);
+  const isringing=useSelector((state) => state.user?. isringing);
+
   const ringtoneRef = useRef(null);
 
   const pcRef = useRef(null)
@@ -274,8 +276,8 @@ useEffect(() => {
       console.log(offer, from);
       setIncomingCall({ from, offer });
       
-      setIsRinging(true);
-
+      // setIsRinging(true);
+dispatch(setIsRinging(true));
       // Play ringtone
       ringtoneRef.current = new Audio("/sounds/ringtone.mp3");
       ringtoneRef.current.loop = true;
@@ -322,7 +324,8 @@ useEffect(() => {
 const handleCallRejected = () => {
     alert("Call has been rejected");
     setIncomingCall(null);
-    setIsRinging(false);
+    // setIsRinging(false);
+    dispatch(setIsRinging(false));
     ringtoneRef.current?.pause();
     dispatch(onChatScreen(true));
   };
@@ -340,7 +343,8 @@ const handleCallRejected = () => {
   const handleAcceptCall = async () => {
     console.log(incomingCall);
     if (!incomingCall) return;
-    setIsRinging(false);
+    // setIsRinging(false);
+    dispatch(setIsRinging(false));
     ringtoneRef.current?.pause();
     setisvideoscreen(true);
     const configuration = {
@@ -405,7 +409,8 @@ console.log(answer);
   const handleRejectCall = () => {
     if (!incomingCall) return; 
     ringtoneRef.current?.pause();
-    setIsRinging(false);
+    // setIsRinging(false);
+    dispatch(setIsRinging(false));
 
     socket.emit("reject-call", { to: incomingCall.from });
     setIncomingCall(null);
@@ -432,13 +437,14 @@ const handleEndCall = () => {
 
   setisvideoscreen(false);
   setIncomingCall(null);
-  setIsRinging(false);
+  // setIsRinging(false);
+  dispatch(setIsRinging(false));
   ringtoneRef.current?.pause();
   dispatch(onChatScreen(true));
 };
 
 
-  if (isRinging) {
+  if (isringing) {
     return (
 
 
