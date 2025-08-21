@@ -81,7 +81,7 @@ const Right = () => {
   useEffect(() => {
     if (!socket) return;
 
-    const listener = (newMessage, sendername) => {
+    const listener = (newMessage, customname) => {
       const isChatScreen = chatScreenRef.current;
       const selectedId = selectedUser?.user?._id;
       const isCurrentChat = ((newMessage.sender === selectedId && newMessage.receiver === logineduser.userId) ||
@@ -93,12 +93,12 @@ const Right = () => {
 
       } else if (!isChatScreen) {
 
-        toast.success(`New message from ${sendername || "someone"}`);
+        toast.success(`New message from ${customname || "someone"}`);
         playNotificationSound();
         dispatch(incrementUnread(newMessage.sender));
       }
       else if (!isCurrentChat) {
-        toast.success(`New message from ${sendername || "someone"}`);
+        toast.success(`New message from ${customname || "someone"}`);
         playNotificationSound();
         dispatch(incrementUnread(newMessage.sender));
       }
@@ -248,6 +248,7 @@ const Right = () => {
       socket.emit("call-user", {
         offer,
         to: selectedUser.user._id,
+        selectedusername: selectedUser?.customname == "" ? selectedUser?.user.username : selectedUser?.customname
       });
 
       pcRef.current.onicecandidate = (event) => {
@@ -260,11 +261,7 @@ const Right = () => {
       };
     }
   };
-useEffect(() => {
-  if (incomingCall) {
-    console.log("📥 New incoming call state:", incomingCall);
-  }
-}, [incomingCall]);
+
 
 
 
@@ -272,9 +269,9 @@ useEffect(() => {
 
     if (!socket) return;
 
-    const handleCallMade = async ({ offer, from }) => {
+    const handleCallMade = async ({ offer, from, selectedusername }) => {
       console.log(offer, from);
-      setIncomingCall({ from, offer });
+      setIncomingCall({ from, offer, selectedusername });
       
       // setIsRinging(true);
 dispatch(setIsRinging(true));
@@ -322,7 +319,7 @@ dispatch(setIsRinging(true));
      
     }
 const handleCallRejected = () => {
-    alert("Call has been rejected");
+    toast.error(`call rejected by ${selectedUser.customname}`);
     setIncomingCall(null);
     // setIsRinging(false);
     dispatch(setIsRinging(false));
@@ -449,7 +446,7 @@ const handleEndCall = () => {
 
 
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 z-50">
-        <h2 className="text-white text-2xl mb-4">Incoming Video Call</h2>
+        <h2 className="text-white text-2xl mb-4">Incoming Video Call from {incomingCall?.selectedusername}</h2>
         <div className="flex gap-6">
           <button
             className="bg-green-500 text-white px-6 py-3 rounded-full"
