@@ -3,7 +3,9 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import friendsmodel from "../models/friends.js";
 import transporter from "../config/emailconfig.js";
+import dotenv from 'dotenv'
 
+dotenv.config();
 
 export const login = async (req, res) => {
    try {
