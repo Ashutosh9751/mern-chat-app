@@ -369,13 +369,11 @@ dispatch(setIsRinging(true));
 
      
     }
-const handleCallRejected = () => {
+const handleCallRejected =async(  {from} ) => {
+
     toast.error(`call rejected by ${selectedUser.customname}`);
-    setIncomingCall(null);
-    // setIsRinging(false);
-    dispatch(setIsRinging(false));
-    ringtoneRef.current?.pause();
-    dispatch(onChatScreen(true));
+    
+    handleEndCallbyuser();
   };
   const handleEndCallbyuser=async () => {
       if (pcRef.current) {
