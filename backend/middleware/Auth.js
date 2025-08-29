@@ -5,7 +5,7 @@ export const islogin = (req, res, next) => {
   if (!token) {
     return res.status(401).json({ message: 'Unauthorized please login' });
   }
-  jwt.verify(token, 'shhhhh', (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
       return res.status(401).json({ message: 'Unauthorized please login' });
     }
