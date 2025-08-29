@@ -281,7 +281,7 @@ const handleaudiocall = async () => {
     // You can play audio using an <audio ref> element
     if (remoteAudioRef.current) {
       remoteAudioRef.current.srcObject = event.streams[0];
-      remoteAudioRef.current.play().catch(console.error);
+     
     }
   };
 
@@ -444,22 +444,16 @@ const handleCallRejected = () => {
     pcRef.current = new RTCPeerConnection(configuration);
     pcRef.current.ontrack = (event) => {
   if (incomingCall.calltype === "video") {
-    pcRef.current.ontrack = (event) => {
-      if (remotevideoref.current) {
-        remotevideoref.current.srcObject = event.streams[0];
-        remotevideoref.current.play().catch(console.error);
-      }
-    };
+    if (remotevideoref.current) {
+      remotevideoref.current.srcObject = event.streams[0];
+    }
   } else {
-    pcRef.current.ontrack = (event) => {
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = event.streams[0];
-        remoteAudioRef.current.play().catch(console.error);
-      }
-    };
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = event.streams[0];
+    }
   }
- 
-    };
+};
+
 
     await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCall.offer)); // or answer
     // Immediately after:
@@ -590,7 +584,8 @@ const handleEndCall = () => {
         ref={remoteAudioRef}
         autoPlay
         controls={false}
-        style={{ width: "400px", background: "black" }}
+        playsInline
+    
       />
       <div>
         <button onClick={handleEndCall} className='absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded'>
