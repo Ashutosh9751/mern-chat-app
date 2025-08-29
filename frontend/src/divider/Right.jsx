@@ -202,7 +202,10 @@ const Right = () => {
   }
   async function openCamera(cameraId) {
     const constraints = {
-      'audio': { 'echoCancellation': true },
+      'audio': { 'echoCancellation': true,
+         noiseSuppression: true,
+    autoGainControl: true
+      },
       'video': {
         'deviceId': cameraId,
 
@@ -440,11 +443,22 @@ const handleCallRejected = () => {
 
     pcRef.current = new RTCPeerConnection(configuration);
     pcRef.current.ontrack = (event) => {
-
+  if (incomingCall.calltype === "video") {
+    pcRef.current.ontrack = (event) => {
       if (remotevideoref.current) {
         remotevideoref.current.srcObject = event.streams[0];
         remotevideoref.current.play().catch(console.error);
       }
+    };
+  } else {
+    pcRef.current.ontrack = (event) => {
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = event.streams[0];
+        remoteAudioRef.current.play().catch(console.error);
+      }
+    };
+  }
+ 
     };
 
     await pcRef.current.setRemoteDescription(new RTCSessionDescription(incomingCall.offer)); // or answer
