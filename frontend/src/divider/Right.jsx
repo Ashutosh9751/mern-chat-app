@@ -374,6 +374,8 @@ const handleCallRejected =async(  {from} ) => {
     toast.error(`call rejected by ${selectedUser.customname}`);
     
     handleEndCallbyuser();
+    setisvideoscreen(false);
+    setisaudioscreen(false);
   };
   const handleEndCallbyuser=async () => {
       if (pcRef.current) {
