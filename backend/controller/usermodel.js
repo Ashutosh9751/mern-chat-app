@@ -18,11 +18,12 @@ export const login = async (req, res) => {
                return res.json({ message: "Invalid credential" });
            }
 
-           var token = jwt.sign({ id:user._id }, 'shhhhh');
+           var token = jwt.sign({ id:user._id }, 'shhhhh', { expiresIn: '7d' });
            res.cookie('token', token, {
                httpOnly: true,
                secure: true,
                sameSite: "None",
+                maxAge: 1000 * 60 * 60 * 24 * 7
 
            })
            res.status(200).json({ message: `hii ${user.username}`, user: user, token: token });
