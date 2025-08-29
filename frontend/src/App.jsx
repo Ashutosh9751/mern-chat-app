@@ -12,7 +12,7 @@ import ProtectedRoute from './ProtectedRoute';
 import socketcontext from './context/contextstate';
 import Forgetpassword from './user/Forgetpassword';
 import Profile from './user/Profile';
-import Editprofile from './user/Editprofile';
+
 
 
 const App = () => {
