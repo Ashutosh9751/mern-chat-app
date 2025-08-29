@@ -372,10 +372,34 @@ dispatch(setIsRinging(true));
 const handleCallRejected =async(  {from} ) => {
 
     toast.error(`call rejected by ${selectedUser.customname}`);
-    
-    handleEndCallbyuser();
-    setisvideoscreen(false);
-    setisaudioscreen(false);
+         if (pcRef.current) {
+    pcRef.current.close();
+    pcRef.current = null;
+  }
+    if (localvideoref.current?.srcObject) {
+    const tracks = localvideoref.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop()); // stop camera + mic
+    localvideoref.current.srcObject = null;
+  }
+  // Clear remote video stream
+  if (remotevideoref.current?.srcObject) {
+    const tracks = remotevideoref.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    remotevideoref.current.srcObject = null;
+  }
+   if (remoteAudioRef.current?.srcObject) {
+    const tracks = remoteAudioRef.current.srcObject.getTracks();
+    tracks.forEach(track => track.stop());
+    remoteAudioRef.current.srcObject = null;
+  }
+  setisvideoscreen(false);
+  setisaudioscreen(false);
+  setIncomingCall(null);
+  // setIsRinging(false);
+  dispatch(setIsRinging(false));
+  ringtoneRef.current?.pause();
+   
+  dispatch(onChatScreen(true));
   };
   const handleEndCallbyuser=async () => {
       if (pcRef.current) {
