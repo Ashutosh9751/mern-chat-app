@@ -241,3 +241,19 @@ export const newpassword=async(req,res)=>{
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+export const getProfile = async (req, res) => {
+  const userid=req.body.user;
+  try {
+    const user = await usermodel.findById(userid);
+  
+    if (!user) {
+      
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    console.log(user);
+    res.json({ success: true,message:user });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

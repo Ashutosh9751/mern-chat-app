@@ -595,7 +595,7 @@ const handleEndCall = () => {
           autoPlay
           playsInline
           controls={false}
-          style={{ width: "400px", height: "300px", background: "black" }}
+       className='w-full h-full'
         />
 
         <video

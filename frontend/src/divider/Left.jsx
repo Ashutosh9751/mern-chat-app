@@ -42,6 +42,12 @@ const Left = () => {
     dispatch(onChatScreen(false));
     dispatch(selectUser(null));
   }
+  const getprofile=async ()=>{
+   
+    navigate('/profile');
+    dispatch(onChatScreen(false));
+    dispatch(selectUser(null));
+  }
   return (
     <div className='md:w-1/10 md:h-screen bg-gray-800 flex items-center flex-col'>
       <div className='flex flex-col items-center gap-y-2 mt-4'>
@@ -56,9 +62,9 @@ const Left = () => {
           <PiChatsCircleDuotone className='text-4xl text-gray-400' />
           <p className='text-sm text-gray-400'>All chats</p>
         </div>
-        <div className='flex flex-col items-center'>
+        <div className='flex flex-col items-center' onClick={getprofile}>
           <IoMdContact className='text-4xl text-gray-400' />
-          <p className='text-sm text-gray-400'>personal</p>
+          <p className='text-sm text-gray-400'>profile</p>
 
         </div>
         <div className='flex flex-col items-center'>
