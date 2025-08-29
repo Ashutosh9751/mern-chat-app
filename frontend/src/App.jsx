@@ -86,7 +86,7 @@ const App = () => {
         />
         <Route path='/forgot-password' element={<Forgetpassword />} />
         <Route path='/profile' element={<Profile />} />
-        <Route path='/editprofile' element={<Editprofile />} />
+        {/* <Route path='/editprofile' element={<Editprofile />} /> */}
       </Routes>
       <ToastContainer />
     </BrowserRouter>
